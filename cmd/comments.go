@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"errors"
-	"os"
 
 	"github.com/spf13/cobra"
 
@@ -33,7 +32,7 @@ func newCommentsCommand() *cobra.Command {
 	return cmd
 }
 
-func newCommentsReplyCommand(parent *prOptions) *cobra.Command {
+func newCommentsReplyCommand(shared *prOptions) *cobra.Command {
 	opts := &commentsReplyOptions{}
 
 	cmd := &cobra.Command{
@@ -41,21 +40,14 @@ func newCommentsReplyCommand(parent *prOptions) *cobra.Command {
 		Short: "Reply to a pull request review thread",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if len(args) > 0 {
-				opts.Selector = args[0]
+			identity, err := shared.identity(args)
+			if err != nil {
+				return err
 			}
-			if opts.Repo == "" {
-				opts.Repo = parent.Repo
-			}
-			if opts.Pull == 0 {
-				opts.Pull = parent.Pull
-			}
-			return runCommentsReply(cmd, opts)
+			return runCommentsReply(cmd, identity, opts)
 		},
 	}
 
-	cmd.Flags().StringVarP(&opts.Repo, "repo", "R", "", "Repository in 'owner/repo' format")
-	cmd.Flags().IntVar(&opts.Pull, "pr", 0, "Pull request number")
 	cmd.Flags().StringVar(&opts.ThreadID, "thread-id", "", "Review thread identifier to reply to")
 	cmd.Flags().StringVar(&opts.ReviewID, "review-id", "", "GraphQL review identifier when replying inside a pending review")
 	cmd.Flags().StringVar(&opts.Body, "body", "", "Reply text")
@@ -66,26 +58,12 @@ func newCommentsReplyCommand(parent *prOptions) *cobra.Command {
 }
 
 type commentsReplyOptions struct {
-	Repo     string
-	Pull     int
-	Selector string
 	ThreadID string
 	ReviewID string
 	Body     string
 }
 
-func runCommentsReply(cmd *cobra.Command, opts *commentsReplyOptions) error {
-	selector, err := resolver.NormalizeSelector(opts.Selector, opts.Pull)
-	if err != nil {
-		return err
-	}
-
-	hostEnv := os.Getenv("GH_HOST")
-	identity, err := resolver.Resolve(selector, opts.Repo, hostEnv)
-	if err != nil {
-		return err
-	}
-
+func runCommentsReply(cmd *cobra.Command, identity resolver.Identity, opts *commentsReplyOptions) error {
 	service := comments.NewService(apiClientFactory(identity.Host))
 
 	reply, err := service.Reply(identity, comments.ReplyOptions{
