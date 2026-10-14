@@ -61,6 +61,9 @@ gh pr-review review comment \
 
 ## review view (GraphQL only)
 
+Also available as `comments view`; the two spellings run the same command and
+accept the same flags.
+
 - **Purpose:** Emit a consolidated snapshot of reviews, inline comments, and
   replies. Use it to capture thread identifiers before replying or resolving
   discussions.

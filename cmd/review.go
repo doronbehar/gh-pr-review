@@ -3,43 +3,12 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
 
-	"github.com/agynio/gh-pr-review/internal/resolver"
 	reviewsvc "github.com/agynio/gh-pr-review/internal/review"
 )
-
-// reviewOptions carries the flags every `review` subcommand understands.
-type reviewOptions struct {
-	Repo     string
-	Pull     int
-	Selector string
-}
-
-// bind registers the shared flags on the `review` command so every subcommand
-// inherits a single definition of them.
-func (o *reviewOptions) bind(cmd *cobra.Command) {
-	cmd.PersistentFlags().StringVarP(&o.Repo, "repo", "R", "", "Repository in 'owner/repo' format")
-	cmd.PersistentFlags().IntVar(&o.Pull, "pr", 0, "Pull request number")
-}
-
-// identity resolves the pull request addressed by the shared flags and the
-// optional positional selector.
-func (o *reviewOptions) identity(args []string) (resolver.Identity, error) {
-	if len(args) > 0 {
-		o.Selector = args[0]
-	}
-
-	selector, err := resolver.NormalizeSelector(o.Selector, o.Pull)
-	if err != nil {
-		return resolver.Identity{}, err
-	}
-
-	return resolver.Resolve(selector, o.Repo, os.Getenv("GH_HOST"))
-}
 
 // pendingReviewOptions carries the flags shared by the subcommands that act on
 // an existing pending review.
@@ -54,7 +23,7 @@ func (o *pendingReviewOptions) bind(cmd *cobra.Command) {
 }
 
 func newReviewCommand() *cobra.Command {
-	opts := &reviewOptions{}
+	opts := &prOptions{}
 
 	cmd := &cobra.Command{
 		Use:   "review",
@@ -78,7 +47,7 @@ func newReviewCommand() *cobra.Command {
 	return cmd
 }
 
-func newReviewStartCommand(shared *reviewOptions) *cobra.Command {
+func newReviewStartCommand(shared *prOptions) *cobra.Command {
 	var commit string
 
 	cmd := &cobra.Command{
@@ -104,7 +73,7 @@ func newReviewStartCommand(shared *reviewOptions) *cobra.Command {
 	return cmd
 }
 
-func newReviewCommentCommand(shared *reviewOptions) *cobra.Command {
+func newReviewCommentCommand(shared *prOptions) *cobra.Command {
 	pending := &pendingReviewOptions{}
 	opts := &reviewCommentOptions{Side: "RIGHT"}
 
@@ -191,7 +160,7 @@ func buildThreadInput(pending *pendingReviewOptions, opts *reviewCommentOptions)
 	}, nil
 }
 
-func newReviewSubmitCommand(shared *reviewOptions) *cobra.Command {
+func newReviewSubmitCommand(shared *prOptions) *cobra.Command {
 	pending := &pendingReviewOptions{}
 	event := "COMMENT"
 

@@ -164,3 +164,36 @@ func (f *fakeViewAPI) GraphQL(query string, variables map[string]interface{}, re
 	f.variables = variables
 	return json.Unmarshal(f.payload, result)
 }
+
+// `comments view` is a second instance of the same command, so it must accept
+// the same flags and emit the same payload as `review view`.
+func TestCommentsViewCommandMatchesReviewView(t *testing.T) {
+	originalFactory := apiClientFactory
+	defer func() { apiClientFactory = originalFactory }()
+
+	run := func(args ...string) string {
+		fake := &fakeViewAPI{payload: viewResponse, t: t}
+		apiClientFactory = func(host string) ghcli.API { return fake }
+
+		root := newRootCommand()
+		buf := &bytes.Buffer{}
+		root.SetOut(buf)
+		root.SetErr(io.Discard)
+		root.SetArgs(args)
+		if err := root.Execute(); err != nil {
+			t.Fatalf("execute %v: %v", args, err)
+		}
+		return buf.String()
+	}
+
+	filters := []string{"--repo", "agyn/repo", "--reviewer", "alice", "--states", "APPROVED,COMMENTED", "--not_outdated", "--tail", "1", "51"}
+	canonical := run(append([]string{"review", "view"}, filters...)...)
+	alias := run(append([]string{"comments", "view"}, filters...)...)
+
+	if alias != canonical {
+		t.Fatalf("comments view output differs from review view:\n alias: %s\n canonical: %s", alias, canonical)
+	}
+	if !strings.Contains(canonical, "thread_id") {
+		t.Fatalf("expected a report payload, got %s", canonical)
+	}
+}

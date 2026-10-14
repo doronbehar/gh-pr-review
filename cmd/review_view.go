@@ -10,7 +10,30 @@ import (
 	"github.com/agynio/gh-pr-review/internal/report"
 )
 
-func newReviewViewCommand(shared *reviewOptions) *cobra.Command {
+// newReviewViewCommand builds the canonical `review view` command.
+func newReviewViewCommand(shared *prOptions) *cobra.Command {
+	cmd := newViewCommand(shared)
+	cmd.Long = `View a structured review summary (GraphQL).
+
+Also available as 'gh pr-review comments view'.`
+	return cmd
+}
+
+// newCommentsViewCommand exposes the same command as `comments view`, so the
+// thread ids it reports can be looked up from the command group that consumes
+// them. Cobra aliases cannot span parents, so this is a second instance of the
+// same command rather than an entry in its Aliases.
+func newCommentsViewCommand(shared *prOptions) *cobra.Command {
+	cmd := newViewCommand(shared)
+	cmd.Short = "Alias for 'review view': view a structured review summary (GraphQL)"
+	cmd.Long = `Alias for 'gh pr-review review view'.
+
+Views a structured review summary (GraphQL): reviews, their inline comment
+threads, and the thread ids that 'comments reply' takes.`
+	return cmd
+}
+
+func newViewCommand(shared *prOptions) *cobra.Command {
 	opts := &reviewViewOptions{}
 
 	cmd := &cobra.Command{
@@ -41,7 +64,7 @@ type reviewViewOptions struct {
 	IncludeCommentNodeID bool
 }
 
-func runReviewView(cmd *cobra.Command, shared *reviewOptions, opts *reviewViewOptions, args []string) error {
+func runReviewView(cmd *cobra.Command, shared *prOptions, opts *reviewViewOptions, args []string) error {
 	if opts.TailReplies < 0 {
 		return fmt.Errorf("invalid --tail value %d: must be non-negative", opts.TailReplies)
 	}

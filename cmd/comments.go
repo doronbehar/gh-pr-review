@@ -10,35 +10,30 @@ import (
 	"github.com/agynio/gh-pr-review/internal/resolver"
 )
 
-type commentsOptions struct {
-	Repo string
-	Pull int
-}
-
 func newCommentsCommand() *cobra.Command {
-	opts := &commentsOptions{}
+	opts := &prOptions{}
 
 	cmd := &cobra.Command{
 		Use:   "comments",
-		Short: "Reply to pull request review threads",
+		Short: "View and reply to pull request review threads",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := cmd.Help(); err != nil {
 				return err
 			}
-			return errors.New("use 'gh pr-review comments reply' to respond to a review thread; run 'gh pr-review review view' to locate thread IDs")
+			return errors.New("use 'gh pr-review comments reply' to respond to a review thread; run 'gh pr-review comments view' (alias of 'gh pr-review review view') to locate thread IDs")
 		},
 	}
 
-	cmd.PersistentFlags().StringVarP(&opts.Repo, "repo", "R", "", "Repository in 'owner/repo' format")
-	cmd.PersistentFlags().IntVar(&opts.Pull, "pr", 0, "Pull request number")
+	opts.bind(cmd)
 
 	cmd.AddCommand(newCommentsReplyCommand(opts))
+	cmd.AddCommand(newCommentsViewCommand(opts))
 
 	return cmd
 }
 
-func newCommentsReplyCommand(parent *commentsOptions) *cobra.Command {
+func newCommentsReplyCommand(parent *prOptions) *cobra.Command {
 	opts := &commentsReplyOptions{}
 
 	cmd := &cobra.Command{

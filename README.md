@@ -173,7 +173,9 @@ The quickest path from opening a pending review to resolving threads:
 
 `gh pr-review review view` emits a GraphQL-only snapshot of pull request
 discussion. The response groups reviews → parent inline comments → thread
-replies, omitting optional fields entirely instead of returning `null`.
+replies, omitting optional fields entirely instead of returning `null`. The
+same command is available as `gh pr-review comments view`, next to
+`comments reply`, which consumes the thread IDs it reports.
 
 Run it with either a combined selector or explicit flags:
 
@@ -248,7 +250,7 @@ Each command binds to a single GitHub backend—there are no runtime fallbacks.
 | --- | --- | --- |
 | `review start` | GraphQL | Opens a pending review via `addPullRequestReview`. |
 | `review comment` | GraphQL | Requires a `PRR_…` review node ID. |
-| `review view` | GraphQL | Aggregates reviews, inline comments, and replies (used for thread IDs). |
+| `review view` | GraphQL | Aggregates reviews, inline comments, and replies (used for thread IDs). Also available as `comments view`. |
 | `review submit` | GraphQL | Finalizes a pending review via `submitPullRequestReview` using the `PRR_…` review node ID (executed through the internal `gh api graphql` wrapper). |
 | `comments reply` | GraphQL | Replies via `addPullRequestReviewThreadReply`; supply `--review-id` when responding from a pending review. |
 | `threads list` | GraphQL | Enumerates review threads for the pull request. |

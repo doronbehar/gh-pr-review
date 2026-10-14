@@ -40,6 +40,8 @@ Get complete review context with inline comments and thread replies:
 
 ```sh
 gh pr-review review view -R owner/repo --pr <number>
+# same command, next to `comments reply`
+gh pr-review comments view -R owner/repo --pr <number>
 ```
 
 **Useful filters:**
