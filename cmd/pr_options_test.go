@@ -93,7 +93,7 @@ func runViewForInference(t *testing.T, run *inferenceRun, args ...string) {
 	root := newRootCommand()
 	root.SetOut(io.Discard)
 	root.SetErr(io.Discard)
-	root.SetArgs(append([]string{"review", "view"}, args...))
+	root.SetArgs(append([]string{"view"}, args...))
 	run.err = root.Execute()
 }
 

@@ -54,11 +54,9 @@ guessed at — pass `--pr` in that case.
 Get complete review context with inline comments and thread replies:
 
 ```sh
-gh pr-review review view -R owner/repo --pr <number>
-# same command, next to `comments reply`
-gh pr-review comments view -R owner/repo --pr <number>
+gh pr-review view -R owner/repo --pr <number>
 # repo and PR inferred from the git context
-gh pr-review review view
+gh pr-review view
 ```
 
 **Useful filters:**
@@ -75,7 +73,7 @@ gh pr-review review view
 Reply to an existing inline comment thread:
 
 ```sh
-gh pr-review comments reply <pr-number> -R owner/repo \
+gh pr-review reply <pr-number> -R owner/repo \
   --thread-id <PRRT_...> \
   --body "Your reply message"
 ```
@@ -101,13 +99,13 @@ gh pr-review threads resolve -R owner/repo <pr-number> --thread-id <PRRT_...>
 Start a pending review:
 
 ```sh
-gh pr-review review start -R owner/repo <pr-number>
+gh pr-review start -R owner/repo <pr-number>
 ```
 
 Add inline comments to pending review:
 
 ```sh
-gh pr-review review comment \
+gh pr-review comment \
   --review-id <PRR_...> \
   --path <file-path> \
   --line <line-number> \
@@ -118,7 +116,7 @@ gh pr-review review comment \
 Submit the review:
 
 ```sh
-gh pr-review review submit \
+gh pr-review submit \
   --review-id <PRR_...> \
   --event <APPROVE|REQUEST_CHANGES|COMMENT> \
   --body "Overall review summary" \
@@ -172,7 +170,7 @@ Example output structure:
 1. **Rely on inference** inside a git repo — `-R` and the PR number are optional
 2. **Use `-R owner/repo`** explicitly when targeting another repository
 3. **Use `--unresolved` and `--not_outdated`** to focus on actionable comments
-4. **Save thread_id values** from `review view` output for replying
+4. **Save thread_id values** from `view` output for replying
 5. **Filter by reviewer** when dealing with specific review feedback
 6. **Use `--tail 1`** to reduce output size by keeping only latest replies
 7. **Parse JSON output** instead of trying to scrape text
@@ -182,20 +180,20 @@ Example output structure:
 ### Get Unresolved Comments for Current PR
 
 ```sh
-gh pr-review review view --unresolved --not_outdated
+gh pr-review view --unresolved --not_outdated
 ```
 
 ### Reply to All Unresolved Comments
 
 1. Get unresolved threads: `gh pr-review threads list --unresolved`
-2. For each thread_id, reply: `gh pr-review comments reply --thread-id <id> --body "..."`
+2. For each thread_id, reply: `gh pr-review reply --thread-id <id> --body "..."`
 3. Optionally resolve: `gh pr-review threads resolve --thread-id <id>`
 
 ### Create Review with Inline Comments
 
-1. Start: `gh pr-review review start`
-2. Add comments: `gh pr-review review comment --review-id <PRR_...> --path <file> --line <num> --body "..."`
-3. Submit: `gh pr-review review submit --review-id <PRR_...> --event REQUEST_CHANGES --body "Summary"`
+1. Start: `gh pr-review start`
+2. Add comments: `gh pr-review comment --review-id <PRR_...> --path <file> --line <num> --body "..."`
+3. Submit: `gh pr-review submit --review-id <PRR_...> --event REQUEST_CHANGES --body "Summary"`
 
 ## Important Notes
 

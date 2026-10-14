@@ -21,9 +21,17 @@ func newRootCommand() *cobra.Command {
 		SilenceErrors: true,
 	}
 
-	cmd.AddCommand(newCommentsCommand())
-	cmd.AddCommand(newReviewCommand())
-	cmd.AddCommand(newThreadsCommand())
+	// Every command addresses a pull request, so the flags that name one are
+	// defined once here and inherited throughout.
+	opts := &prOptions{}
+	opts.bind(cmd)
+
+	cmd.AddCommand(newReplyCommand(opts))
+	cmd.AddCommand(newStartCommand(opts))
+	cmd.AddCommand(newCommentCommand(opts))
+	cmd.AddCommand(newSubmitCommand(opts))
+	cmd.AddCommand(newViewCommand(opts))
+	cmd.AddCommand(newThreadsCommand(opts))
 
 	return cmd
 }

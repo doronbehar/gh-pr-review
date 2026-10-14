@@ -2,9 +2,9 @@
 You have a pre-installed `gh pr-review` extension that simplifies working with Pull Requests. Below are the commands for retrieving PR reviews/comments and replying to review comments in a thread, and open and sumbit a review.
 
 ## Quick PR overview with gh
-View details: `gh pr-review review view <PR number> -R <owner>/<repo>`
+View details: `gh pr-review view <PR number> -R <owner>/<repo>`
 
-Inside a git repository both can be omitted — `gh pr-review review view` infers
+Inside a git repository both can be omitted — `gh pr-review view` infers
 the repository from the git remotes and the pull request from the checked out
 branch. The explicit forms below stay valid and take precedence.
 
@@ -25,7 +25,7 @@ Useful filters:
 Example capturing the latest actionable work:
 
 ```bash
-gh pr-review review view 51 -R agyn/repo \
+gh pr-review view 51 -R agyn/repo \
   --reviewer emerson \
   --states CHANGES_REQUESTED,COMMENTED \
   --unresolved \
@@ -34,11 +34,11 @@ gh pr-review review view 51 -R agyn/repo \
 ```
 
 ## Reply to an inline comment
-Use the **thread_id** values with `gh pr-review comments reply <PR number>` to continue discussions. 
+Use the **thread_id** values with `gh pr-review reply <PR number>` to continue discussions. 
 Example:
 
 ```sh
-gh pr-review comments reply 51 -R owner/repo \
+gh pr-review reply 51 -R owner/repo \
  --thread-id PRRT_kwDOAAABbcdEFG12 \
  --body "Follow-up addressed in commit abc123" 
 ```
@@ -47,10 +47,10 @@ Note: If you want to leave a high-level comment on a PR that isn’t tied to any
 
 ## Submit Review
 
-1. **Start a pending review.** Use `gh pr-review review start <PR number> -R <owner>/<repo>`
+1. **Start a pending review.** Use `gh pr-review start <PR number> -R <owner>/<repo>`
 
    ```sh
-   gh pr-review review start 42 -R owner/repo
+   gh pr-review start 42 -R owner/repo
 
    {
      "id": "PRR_kwDOAAABbcdEFG12",
@@ -58,10 +58,10 @@ Note: If you want to leave a high-level comment on a PR that isn’t tied to any
    }
    ```
 
-2. **Add inline comments with the pending review ID.** The `review comment` command requires a `review-id` identifier `PRR_…`. Use `gh pr-review review comment <PR number> -R <owner>/<repo> ...`. Example:
+2. **Add inline comments with the pending review ID.** The `comment` command requires a `review-id` identifier `PRR_…`. Use `gh pr-review comment <PR number> -R <owner>/<repo> ...`. Example:
 
    ```sh
-   gh pr-review review comment 42 -R owner/repo \
+   gh pr-review comment 42 -R owner/repo \
      --review-id PRR_kwDOAAABbcdEFG12 \
      --path internal/service.go \
      --line 42 \
@@ -77,10 +77,10 @@ Note: If you want to leave a high-level comment on a PR that isn’t tied to any
 3. **Submit the review.** Reuse the pending review `PRR_…`
    identifier when finalizing. Successful submissions emit a status-only
    payload. Errors are returned as structured JSON for
-   troubleshooting. Use `gh pr-review review submit <PR number> -R <owner>/<repo> ...`. Example:
+   troubleshooting. Use `gh pr-review submit <PR number> -R <owner>/<repo> ...`. Example:
 
    ```sh
-   gh pr-review review submit 42 -R owner/repo \
+   gh pr-review submit 42 -R owner/repo \
      --review-id PRR_kwDOAAABbcdEFG12 \
      --event REQUEST_CHANGES \
      --body "Please add tests"
@@ -91,11 +91,11 @@ Note: If you want to leave a high-level comment on a PR that isn’t tied to any
    ```
 
 Optimization Tips:
-- The `gh pr-review review comment` can be executed in batch instead of one by one to optimize performance. Grouping calls where possible is recommended.
+- The `gh pr-review comment` can be executed in batch instead of one by one to optimize performance. Grouping calls where possible is recommended.
 
 ## Resolving review comments
 
-To see a list of your unresolved threads, use `gh pr-review review view` with filters `--unresolved` and `--reviewer <your login>`
+To see a list of your unresolved threads, use `gh pr-review view` with filters `--unresolved` and `--reviewer <your login>`
 
 
 Mark an inline thread as resolved:

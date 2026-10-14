@@ -10,19 +10,15 @@ import (
 	"github.com/agynio/gh-pr-review/internal/threads"
 )
 
-func newThreadsCommand() *cobra.Command {
-	opts := &prOptions{}
-
+func newThreadsCommand(shared *prOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "threads",
 		Short: "Inspect and resolve pull request review threads",
 	}
 
-	opts.bind(cmd)
-
-	cmd.AddCommand(newThreadsListCommand(opts))
-	cmd.AddCommand(newThreadsResolveCommand(opts))
-	cmd.AddCommand(newThreadsUnresolveCommand(opts))
+	cmd.AddCommand(newThreadsListCommand(shared))
+	cmd.AddCommand(newThreadsResolveCommand(shared))
+	cmd.AddCommand(newThreadsUnresolveCommand(shared))
 
 	return cmd
 }

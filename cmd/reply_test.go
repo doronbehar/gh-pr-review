@@ -32,23 +32,6 @@ func (f *commandFakeAPI) GraphQL(query string, variables map[string]interface{},
 	return f.graphqlFunc(query, variables, result)
 }
 
-func TestCommentsCommandRootShowsGuidance(t *testing.T) {
-	originalFactory := apiClientFactory
-	defer func() { apiClientFactory = originalFactory }()
-
-	root := newRootCommand()
-	stdout := &bytes.Buffer{}
-	stderr := &bytes.Buffer{}
-	root.SetOut(stdout)
-	root.SetErr(stderr)
-	root.SetArgs([]string{"comments"})
-
-	err := root.Execute()
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "comments reply")
-	assert.Contains(t, err.Error(), "review view")
-}
-
 func TestCommentsReplyCommand(t *testing.T) {
 	originalFactory := apiClientFactory
 	defer func() { apiClientFactory = originalFactory }()
@@ -116,7 +99,7 @@ func TestCommentsReplyCommand(t *testing.T) {
 	stderr := &bytes.Buffer{}
 	root.SetOut(stdout)
 	root.SetErr(stderr)
-	root.SetArgs([]string{"comments", "reply", "--thread-id", "PRRT_thread", "--review-id", "PRR_pending", "--body", "ack", "--repo", "octo/demo", "7"})
+	root.SetArgs([]string{"reply", "--thread-id", "PRRT_thread", "--review-id", "PRR_pending", "--body", "ack", "--repo", "octo/demo", "7"})
 
 	err := root.Execute()
 	require.NoError(t, err)
@@ -192,7 +175,7 @@ func TestCommentsReplyCommandWithoutReviewID(t *testing.T) {
 	stderr := &bytes.Buffer{}
 	root.SetOut(stdout)
 	root.SetErr(stderr)
-	root.SetArgs([]string{"comments", "reply", "--thread-id", "PRRT_thread", "--body", "ack", "--repo", "octo/demo", "7"})
+	root.SetArgs([]string{"reply", "--thread-id", "PRRT_thread", "--body", "ack", "--repo", "octo/demo", "7"})
 
 	err := root.Execute()
 	require.NoError(t, err)

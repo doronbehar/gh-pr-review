@@ -9,42 +9,22 @@ import (
 	"github.com/agynio/gh-pr-review/internal/resolver"
 )
 
-func newCommentsCommand() *cobra.Command {
-	opts := &prOptions{}
-
-	cmd := &cobra.Command{
-		Use:   "comments",
-		Short: "View and reply to pull request review threads",
-		Args:  cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := cmd.Help(); err != nil {
-				return err
-			}
-			return errors.New("use 'gh pr-review comments reply' to respond to a review thread; run 'gh pr-review comments view' (alias of 'gh pr-review review view') to locate thread IDs")
-		},
-	}
-
-	opts.bind(cmd)
-
-	cmd.AddCommand(newCommentsReplyCommand(opts))
-	cmd.AddCommand(newCommentsViewCommand(opts))
-
-	return cmd
-}
-
-func newCommentsReplyCommand(shared *prOptions) *cobra.Command {
-	opts := &commentsReplyOptions{}
+func newReplyCommand(shared *prOptions) *cobra.Command {
+	opts := &replyOptions{}
 
 	cmd := &cobra.Command{
 		Use:   "reply [<number> | <url>]",
 		Short: "Reply to a pull request review thread",
-		Args:  cobra.MaximumNArgs(1),
+		Long: `Reply to a pull request review thread.
+
+Thread identifiers come from 'gh pr-review view'.`,
+		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			identity, err := shared.identity(args)
 			if err != nil {
 				return err
 			}
-			return runCommentsReply(cmd, identity, opts)
+			return runReply(cmd, identity, opts)
 		},
 	}
 
@@ -57,13 +37,13 @@ func newCommentsReplyCommand(shared *prOptions) *cobra.Command {
 	return cmd
 }
 
-type commentsReplyOptions struct {
+type replyOptions struct {
 	ThreadID string
 	ReviewID string
 	Body     string
 }
 
-func runCommentsReply(cmd *cobra.Command, identity resolver.Identity, opts *commentsReplyOptions) error {
+func runReply(cmd *cobra.Command, identity resolver.Identity, opts *replyOptions) error {
 	service := comments.NewService(apiClientFactory(identity.Host))
 
 	reply, err := service.Reply(identity, comments.ReplyOptions{

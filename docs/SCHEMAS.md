@@ -5,7 +5,7 @@ schemas disallow additional properties to surface unexpected payload changes.
 
 ## ReviewState
 
-Used by `review start` and `review submit`.
+Used by `start` and `submit`.
 
 ```json
 {
@@ -34,7 +34,7 @@ Used by `review start` and `review submit`.
 
 ## ReviewThread
 
-Produced by `review comment`.
+Produced by `comment`.
 
 ```json
 {
@@ -66,7 +66,7 @@ Produced by `review comment`.
 
 ## ReviewReport
 
-Emitted by `review view`.
+Emitted by `view`.
 
 ```json
 {
@@ -194,7 +194,7 @@ Emitted by `review view`.
 
 ## ReplyMinimal
 
-Returned by `comments reply`.
+Returned by `reply`.
 
 ```json
 {

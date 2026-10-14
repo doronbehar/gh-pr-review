@@ -31,7 +31,7 @@ func TestReviewViewCommandFiltersOutput(t *testing.T) {
 	buf := &bytes.Buffer{}
 	root.SetOut(buf)
 	root.SetErr(io.Discard)
-	root.SetArgs([]string{"review", "view", "--repo", "agyn/repo", "--reviewer", "alice", "--states", "APPROVED,COMMENTED", "--not_outdated", "--tail", "1", "51"})
+	root.SetArgs([]string{"view", "--repo", "agyn/repo", "--reviewer", "alice", "--states", "APPROVED,COMMENTED", "--not_outdated", "--tail", "1", "51"})
 
 	if err := root.Execute(); err != nil {
 		t.Fatalf("execute command: %v", err)
@@ -94,7 +94,7 @@ func TestReviewViewCommandInvalidState(t *testing.T) {
 	root := newRootCommand()
 	root.SetOut(io.Discard)
 	root.SetErr(io.Discard)
-	root.SetArgs([]string{"review", "view", "--repo", "agyn/repo", "--states", "unknown", "51"})
+	root.SetArgs([]string{"view", "--repo", "agyn/repo", "--states", "unknown", "51"})
 
 	err := root.Execute()
 	if err == nil {
@@ -116,7 +116,7 @@ func TestReviewViewCommandIncludesCommentNodeID(t *testing.T) {
 	buf := &bytes.Buffer{}
 	root.SetOut(buf)
 	root.SetErr(io.Discard)
-	root.SetArgs([]string{"review", "view", "--repo", "agyn/repo", "--include-comment-node-id", "51"})
+	root.SetArgs([]string{"view", "--repo", "agyn/repo", "--include-comment-node-id", "51"})
 
 	if err := root.Execute(); err != nil {
 		t.Fatalf("execute command: %v", err)
@@ -163,37 +163,4 @@ func (f *fakeViewAPI) REST(string, string, map[string]string, interface{}, inter
 func (f *fakeViewAPI) GraphQL(query string, variables map[string]interface{}, result interface{}) error {
 	f.variables = variables
 	return json.Unmarshal(f.payload, result)
-}
-
-// `comments view` is a second instance of the same command, so it must accept
-// the same flags and emit the same payload as `review view`.
-func TestCommentsViewCommandMatchesReviewView(t *testing.T) {
-	originalFactory := apiClientFactory
-	defer func() { apiClientFactory = originalFactory }()
-
-	run := func(args ...string) string {
-		fake := &fakeViewAPI{payload: viewResponse, t: t}
-		apiClientFactory = func(host string) ghapi.API { return fake }
-
-		root := newRootCommand()
-		buf := &bytes.Buffer{}
-		root.SetOut(buf)
-		root.SetErr(io.Discard)
-		root.SetArgs(args)
-		if err := root.Execute(); err != nil {
-			t.Fatalf("execute %v: %v", args, err)
-		}
-		return buf.String()
-	}
-
-	filters := []string{"--repo", "agyn/repo", "--reviewer", "alice", "--states", "APPROVED,COMMENTED", "--not_outdated", "--tail", "1", "51"}
-	canonical := run(append([]string{"review", "view"}, filters...)...)
-	alias := run(append([]string{"comments", "view"}, filters...)...)
-
-	if alias != canonical {
-		t.Fatalf("comments view output differs from review view:\n alias: %s\n canonical: %s", alias, canonical)
-	}
-	if !strings.Contains(canonical, "thread_id") {
-		t.Fatalf("expected a report payload, got %s", canonical)
-	}
 }

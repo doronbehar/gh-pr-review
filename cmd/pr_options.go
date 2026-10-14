@@ -11,17 +11,17 @@ import (
 	"github.com/agynio/gh-pr-review/internal/resolver"
 )
 
-// prOptions carries the flags that address a pull request. Every command group
-// binds one instance on its parent command so its subcommands share a single
-// definition of these flags.
+// prOptions carries the flags that address a pull request. One instance is
+// bound on the root command, so every command shares a single definition of
+// these flags.
 type prOptions struct {
 	Repo     string
 	Pull     int
 	Selector string
 }
 
-// bind registers the shared flags as persistent flags so all subcommands of
-// cmd inherit them.
+// bind registers the shared flags as persistent flags so every command below
+// cmd inherits them.
 func (o *prOptions) bind(cmd *cobra.Command) {
 	cmd.PersistentFlags().StringVarP(&o.Repo, "repo", "R", "", "Repository in 'owner/repo' format")
 	cmd.PersistentFlags().IntVar(&o.Pull, "pr", 0, "Pull request number")

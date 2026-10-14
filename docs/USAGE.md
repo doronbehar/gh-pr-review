@@ -21,7 +21,7 @@ gh's secure storage.
 Unless stated otherwise, commands emit JSON only. Optional fields are omitted
 instead of serializing as `null`. Array responses default to `[]`.
 
-## review start (GraphQL only)
+## start (GraphQL only)
 
 - **Purpose:** Open (or resume) a pending review on the head commit.
 - **Inputs:**
@@ -34,7 +34,7 @@ instead of serializing as `null`. Array responses default to `[]`.
   `id` and `state`; optional `submitted_at`.
 
 ```sh
-gh pr-review review start -R owner/repo 42
+gh pr-review start -R owner/repo 42
 
 {
   "id": "PRR_kwDOAAABbcdEFG12",
@@ -42,11 +42,11 @@ gh pr-review review start -R owner/repo 42
 }
 ```
 
-## review comment (GraphQL only)
+## comment (GraphQL only)
 
 - **Purpose:** Start a new inline thread on an existing pending review. Each
   call creates a fresh thread; replying to an existing thread is
-  `comments reply`.
+  `reply`.
 - **Inputs:**
   - `--review-id` **(required):** GraphQL review node ID (must start with
     `PRR_`). Numeric IDs are rejected.
@@ -57,7 +57,7 @@ gh pr-review review start -R owner/repo 42
   `id`, `path`, `is_outdated`; optional `line`.
 
 ```sh
-gh pr-review review comment \
+gh pr-review comment \
   --review-id PRR_kwDOAAABbcdEFG12 \
   --path internal/service.go \
   --line 42 \
@@ -72,10 +72,7 @@ gh pr-review review comment \
 }
 ```
 
-## review view (GraphQL only)
-
-Also available as `comments view`; the two spellings run the same command and
-accept the same flags.
+## view (GraphQL only)
 
 - **Purpose:** Emit a consolidated snapshot of reviews, inline comments, and
   replies. Use it to capture thread identifiers before replying or resolving
@@ -91,7 +88,7 @@ accept the same flags.
 - **Output shape:**
 
 ```sh
-gh pr-review review view --reviewer octocat --states CHANGES_REQUESTED -R owner/repo 42
+gh pr-review view --reviewer octocat --states CHANGES_REQUESTED -R owner/repo 42
 
 {
   "reviews": [
@@ -118,11 +115,11 @@ gh pr-review review view --reviewer octocat --states CHANGES_REQUESTED -R owner/
 ```
 
 The `thread_id` values surfaced in the report feed directly into
-`comments reply`. Enable `--include-comment-node-id` to decorate parent
+`reply`. Enable `--include-comment-node-id` to decorate parent
 comments and replies with GraphQL `comment_node_id` fields; those keys remain
 omitted otherwise.
 
-## review submit (GraphQL only)
+## submit (GraphQL only)
 
 - **Purpose:** Finalize a pending review as COMMENT, APPROVE, or
   REQUEST_CHANGES.
@@ -138,7 +135,7 @@ omitted otherwise.
   "errors": [...] }` and exits non-zero.
 
 ```sh
-gh pr-review review submit \
+gh pr-review submit \
   --review-id PRR_kwDOAAABbcdEFG12 \
   --event REQUEST_CHANGES \
   --body "Please cover edge cases" \
@@ -157,12 +154,12 @@ gh pr-review review submit \
 }
 ```
 
-> **Tip:** `review view` is the preferred way to discover review metadata
+> **Tip:** `view` is the preferred way to discover review metadata
 > (pending review IDs, thread IDs, optional comment node IDs, thread state)
 > before mutating threads or
 > replying.
 
-## comments reply (GraphQL only)
+## reply (GraphQL only)
 
 - **Purpose:** Reply to a review thread.
 - **Inputs:**
@@ -174,7 +171,7 @@ gh pr-review review submit \
 - **Output schema:** [`ReplyMinimal`](SCHEMAS.md#replyminimal).
 
 ```sh
-gh pr-review comments reply \
+gh pr-review reply \
   --thread-id PRRT_kwDOAAABbFg12345 \
   --body "Ack" \
   -R owner/repo 42

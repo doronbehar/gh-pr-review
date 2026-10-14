@@ -22,32 +22,7 @@ func (o *pendingReviewOptions) bind(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&o.Body, "body", "", "Comment or review body")
 }
 
-func newReviewCommand() *cobra.Command {
-	opts := &prOptions{}
-
-	cmd := &cobra.Command{
-		Use:   "review",
-		Short: "Manage pending reviews via GraphQL helpers",
-		Args:  cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := cmd.Help(); err != nil {
-				return err
-			}
-			return errors.New("specify a subcommand: start, comment, submit, or view")
-		},
-	}
-
-	opts.bind(cmd)
-
-	cmd.AddCommand(newReviewStartCommand(opts))
-	cmd.AddCommand(newReviewCommentCommand(opts))
-	cmd.AddCommand(newReviewSubmitCommand(opts))
-	cmd.AddCommand(newReviewViewCommand(opts))
-
-	return cmd
-}
-
-func newReviewStartCommand(shared *prOptions) *cobra.Command {
+func newStartCommand(shared *prOptions) *cobra.Command {
 	var commit string
 
 	cmd := &cobra.Command{
@@ -73,19 +48,18 @@ func newReviewStartCommand(shared *prOptions) *cobra.Command {
 	return cmd
 }
 
-func newReviewCommentCommand(shared *prOptions) *cobra.Command {
+func newCommentCommand(shared *prOptions) *cobra.Command {
 	pending := &pendingReviewOptions{}
 	opts := &reviewCommentOptions{Side: "RIGHT"}
 
 	cmd := &cobra.Command{
-		Use:     "comment [<number> | <url>]",
-		Aliases: []string{"add-comment"},
-		Short:   "Start a new inline comment thread on a pending review",
+		Use:   "comment [<number> | <url>]",
+		Short: "Start a new inline comment thread on a pending review",
 		Long: `Start a new inline comment thread on a pending review.
 
 Each invocation creates a fresh thread at --path/--line; it cannot post into an
-existing thread. To reply to a thread, use 'gh pr-review comments reply' with
-the thread id from 'gh pr-review review view'.`,
+existing thread. To reply to a thread, use 'gh pr-review reply' with the
+thread id from 'gh pr-review view'.`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			input, err := buildThreadInput(pending, opts)
@@ -160,7 +134,7 @@ func buildThreadInput(pending *pendingReviewOptions, opts *reviewCommentOptions)
 	}, nil
 }
 
-func newReviewSubmitCommand(shared *prOptions) *cobra.Command {
+func newSubmitCommand(shared *prOptions) *cobra.Command {
 	pending := &pendingReviewOptions{}
 	event := "COMMENT"
 
