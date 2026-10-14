@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"errors"
-	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -12,19 +11,23 @@ import (
 )
 
 func newThreadsCommand() *cobra.Command {
+	opts := &prOptions{}
+
 	cmd := &cobra.Command{
 		Use:   "threads",
 		Short: "Inspect and resolve pull request review threads",
 	}
 
-	cmd.AddCommand(newThreadsListCommand())
-	cmd.AddCommand(newThreadsResolveCommand())
-	cmd.AddCommand(newThreadsUnresolveCommand())
+	opts.bind(cmd)
+
+	cmd.AddCommand(newThreadsListCommand(opts))
+	cmd.AddCommand(newThreadsResolveCommand(opts))
+	cmd.AddCommand(newThreadsUnresolveCommand(opts))
 
 	return cmd
 }
 
-func newThreadsListCommand() *cobra.Command {
+func newThreadsListCommand(shared *prOptions) *cobra.Command {
 	opts := &threadsListOptions{}
 
 	cmd := &cobra.Command{
@@ -32,41 +35,26 @@ func newThreadsListCommand() *cobra.Command {
 		Short: "List review threads for a pull request",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if len(args) > 0 {
-				opts.Selector = args[0]
+			identity, err := shared.identity(args)
+			if err != nil {
+				return err
 			}
-			return runThreadsList(cmd, opts)
+			return runThreadsList(cmd, identity, opts)
 		},
 	}
 
 	cmd.Flags().BoolVar(&opts.UnresolvedOnly, "unresolved", false, "Filter to unresolved threads only")
 	cmd.Flags().BoolVar(&opts.MineOnly, "mine", false, "Show only threads involving or resolvable by the viewer")
-	cmd.PersistentFlags().StringVarP(&opts.Repo, "repo", "R", "", "Repository in 'owner/repo' format")
-	cmd.PersistentFlags().IntVar(&opts.Pull, "pr", 0, "Pull request number")
 
 	return cmd
 }
 
 type threadsListOptions struct {
-	Repo           string
-	Pull           int
-	Selector       string
 	UnresolvedOnly bool
 	MineOnly       bool
 }
 
-func runThreadsList(cmd *cobra.Command, opts *threadsListOptions) error {
-	selector, err := resolver.NormalizeSelector(opts.Selector, opts.Pull)
-	if err != nil {
-		return err
-	}
-
-	hostEnv := os.Getenv("GH_HOST")
-	identity, err := resolver.Resolve(selector, opts.Repo, hostEnv)
-	if err != nil {
-		return err
-	}
-
+func runThreadsList(cmd *cobra.Command, identity resolver.Identity, opts *threadsListOptions) error {
 	service := threads.NewService(apiClientFactory(identity.Host))
 	payload, err := service.List(identity, threads.ListOptions{
 		OnlyUnresolved: opts.UnresolvedOnly,
@@ -79,15 +67,15 @@ func runThreadsList(cmd *cobra.Command, opts *threadsListOptions) error {
 	return encodeJSON(cmd, payload)
 }
 
-func newThreadsResolveCommand() *cobra.Command {
-	return newThreadsMutationCommand(true)
+func newThreadsResolveCommand(shared *prOptions) *cobra.Command {
+	return newThreadsMutationCommand(shared, true)
 }
 
-func newThreadsUnresolveCommand() *cobra.Command {
-	return newThreadsMutationCommand(false)
+func newThreadsUnresolveCommand(shared *prOptions) *cobra.Command {
+	return newThreadsMutationCommand(shared, false)
 }
 
-func newThreadsMutationCommand(resolve bool) *cobra.Command {
+func newThreadsMutationCommand(shared *prOptions, resolve bool) *cobra.Command {
 	opts := &threadsMutationOptions{}
 
 	use := "resolve"
@@ -102,30 +90,23 @@ func newThreadsMutationCommand(resolve bool) *cobra.Command {
 		Short: short,
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if len(args) > 0 {
-				opts.Selector = args[0]
-			}
 			if err := opts.Validate(); err != nil {
 				return err
 			}
-			if resolve {
-				return runThreadsResolve(cmd, opts)
+			identity, err := shared.identity(args)
+			if err != nil {
+				return err
 			}
-			return runThreadsUnresolve(cmd, opts)
+			return runThreadsMutation(cmd, identity, opts, resolve)
 		},
 	}
 
 	cmd.Flags().StringVar(&opts.ThreadID, "thread-id", "", "GraphQL node ID for the review thread")
-	cmd.PersistentFlags().StringVarP(&opts.Repo, "repo", "R", "", "Repository in 'owner/repo' format")
-	cmd.PersistentFlags().IntVar(&opts.Pull, "pr", 0, "Pull request number")
 
 	return cmd
 }
 
 type threadsMutationOptions struct {
-	Repo     string
-	Pull     int
-	Selector string
 	ThreadID string
 }
 
@@ -136,30 +117,12 @@ func (o *threadsMutationOptions) Validate() error {
 	return nil
 }
 
-func runThreadsResolve(cmd *cobra.Command, opts *threadsMutationOptions) error {
-	return runThreadsMutation(cmd, opts, true)
-}
-
-func runThreadsUnresolve(cmd *cobra.Command, opts *threadsMutationOptions) error {
-	return runThreadsMutation(cmd, opts, false)
-}
-
-func runThreadsMutation(cmd *cobra.Command, opts *threadsMutationOptions, resolve bool) error {
-	selector, err := resolver.NormalizeSelector(opts.Selector, opts.Pull)
-	if err != nil {
-		return err
-	}
-
-	hostEnv := os.Getenv("GH_HOST")
-	identity, err := resolver.Resolve(selector, opts.Repo, hostEnv)
-	if err != nil {
-		return err
-	}
-
+func runThreadsMutation(cmd *cobra.Command, identity resolver.Identity, opts *threadsMutationOptions, resolve bool) error {
 	service := threads.NewService(apiClientFactory(identity.Host))
 	action := threads.ActionOptions{ThreadID: strings.TrimSpace(opts.ThreadID)}
 
 	var result threads.ActionResult
+	var err error
 	if resolve {
 		result, err = service.Resolve(identity, action)
 	} else {
