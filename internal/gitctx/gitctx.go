@@ -39,14 +39,15 @@ func (r Repo) Slug() string {
 // `gh repo set-default` honored, and `upstream` preferred over `origin`. It
 // reads local git and gh configuration only; no API requests are made.
 func CurrentRepo() (Repo, error) {
-	// Remotes are matched against the hosts gh knows, so with no credentials
-	// at all every remote looks foreign. Say that instead.
-	if len(auth.KnownHosts()) == 0 {
-		return Repo{}, errors.New("no authenticated GitHub host: run `gh auth login`, or set GH_TOKEN")
-	}
-
 	current, err := repository.Current()
 	if err != nil {
+		// Remotes are matched against the hosts gh knows, so with no
+		// credentials at all every remote looks foreign. Say that instead,
+		// but only once the lookup has had its chance: GH_REPO answers
+		// without needing a host, or any git state.
+		if len(auth.KnownHosts()) == 0 {
+			return Repo{}, errors.New("no authenticated GitHub host: run `gh auth login`, or set GH_TOKEN")
+		}
 		return Repo{}, &flatError{err: err}
 	}
 	if current.Owner == "" || current.Name == "" {

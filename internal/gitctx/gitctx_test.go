@@ -7,13 +7,20 @@ import (
 	"testing"
 )
 
-// newRepo creates a repository with one commit and makes it the working
-// directory for the test.
-func newRepo(t *testing.T) {
+// requireGit skips a test that cannot run without the git binary, such as in
+// a sandboxed build.
+func requireGit(t *testing.T) {
 	t.Helper()
 	if _, err := exec.LookPath("git"); err != nil {
 		t.Skip("git is not installed")
 	}
+}
+
+// newRepo creates a repository with one commit and makes it the working
+// directory for the test.
+func newRepo(t *testing.T) {
+	t.Helper()
+	requireGit(t)
 
 	dir := t.TempDir()
 	t.Chdir(dir)
@@ -84,6 +91,7 @@ func TestCurrentBranchOnDetachedHead(t *testing.T) {
 }
 
 func TestCurrentBranchOutsideARepository(t *testing.T) {
+	requireGit(t)
 	t.Chdir(t.TempDir())
 
 	_, err := CurrentBranch()
@@ -96,9 +104,12 @@ func TestCurrentBranchOutsideARepository(t *testing.T) {
 }
 
 // GH_REPO overrides the remotes, which is also the one repository lookup that
-// needs no git state at all.
+// needs neither git state nor credentials.
 func TestCurrentRepoHonorsGHRepo(t *testing.T) {
 	t.Setenv("GH_REPO", "octo/demo")
+	t.Setenv("GH_TOKEN", "")
+	t.Setenv("GITHUB_TOKEN", "")
+	t.Setenv("GH_CONFIG_DIR", t.TempDir())
 
 	repo, err := CurrentRepo()
 	if err != nil {
