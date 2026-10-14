@@ -43,10 +43,10 @@ Note: If you want to leave a high-level comment on a PR that isn’t tied to any
 
 ## Submit Review
 
-1. **Start a pending review.** Use `gh pr-review review --start <PR number> -R <owner>/<repo>`
+1. **Start a pending review.** Use `gh pr-review review start <PR number> -R <owner>/<repo>`
 
    ```sh
-   gh pr-review review --start 42 -R owner/repo
+   gh pr-review review start 42 -R owner/repo
 
    {
      "id": "PRR_kwDOAAABbcdEFG12",
@@ -54,10 +54,10 @@ Note: If you want to leave a high-level comment on a PR that isn’t tied to any
    }
    ```
 
-2. **Add inline comments with the pending review ID.** The `review --add-comment`requiers `review-id` identifier `PRR_…`. Use `gh pr-review review --add-comment <PR number> -R <owner>/<repo> ...`. Example:
+2. **Add inline comments with the pending review ID.** The `review comment`requiers `review-id` identifier `PRR_…`. Use `gh pr-review review comment <PR number> -R <owner>/<repo> ...`. Example:
 
    ```sh
-   gh pr-review review --add-comment 42 -R owner/repo \
+   gh pr-review review comment 42 -R owner/repo \
      --review-id PRR_kwDOAAABbcdEFG12 \
      --path internal/service.go \
      --line 42 \
@@ -73,10 +73,10 @@ Note: If you want to leave a high-level comment on a PR that isn’t tied to any
 3. **Submit the review.** Reuse the pending review `PRR_…`
    identifier when finalizing. Successful submissions emit a status-only
    payload. Errors are returned as structured JSON for
-   troubleshooting. Use `gh pr-review review --submit <PR number> -R <owner>/<repo> ...`. Example:
+   troubleshooting. Use `gh pr-review review submit <PR number> -R <owner>/<repo> ...`. Example:
 
    ```sh
-   gh pr-review review --submit 42 -R owner/repo \
+   gh pr-review review submit 42 -R owner/repo \
      --review-id PRR_kwDOAAABbcdEFG12 \
      --event REQUEST_CHANGES \
      --body "Please add tests"
@@ -87,7 +87,7 @@ Note: If you want to leave a high-level comment on a PR that isn’t tied to any
    ```
 
 Optimization Tips:
-- The `gh pr-review review --add-comment` can be executed in batch instead of one by one to optimize performance. Grouping calls where possible is recommended.
+- The `gh pr-review review comment` can be executed in batch instead of one by one to optimize performance. Grouping calls where possible is recommended.
 
 ## Resolving review comments
 

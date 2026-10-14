@@ -53,7 +53,7 @@ func TestReviewStartCommand_GraphQLOnly(t *testing.T) {
 	stderr := &bytes.Buffer{}
 	root.SetOut(stdout)
 	root.SetErr(stderr)
-	root.SetArgs([]string{"review", "--start", "--repo", "octo/demo", "7"})
+	root.SetArgs([]string{"review", "start", "--repo", "octo/demo", "7"})
 
 	err := root.Execute()
 	require.NoError(t, err)
@@ -72,7 +72,7 @@ func TestReviewStartCommand_GraphQLOnly(t *testing.T) {
 	assert.Equal(t, 2, call)
 }
 
-func TestReviewAddCommentCommand_GraphQLOnly(t *testing.T) {
+func TestReviewCommentCommand_GraphQLOnly(t *testing.T) {
 	originalFactory := apiClientFactory
 	defer func() { apiClientFactory = originalFactory }()
 
@@ -105,7 +105,7 @@ func TestReviewAddCommentCommand_GraphQLOnly(t *testing.T) {
 	stderr := &bytes.Buffer{}
 	root.SetOut(stdout)
 	root.SetErr(stderr)
-	root.SetArgs([]string{"review", "--add-comment", "--review-id", "PRR_review", "--path", "scenario.md", "--line", "12", "--body", "note", "--repo", "octo/demo", "7"})
+	root.SetArgs([]string{"review", "comment", "--review-id", "PRR_review", "--path", "scenario.md", "--line", "12", "--body", "note", "--repo", "octo/demo", "7"})
 
 	err := root.Execute()
 	require.NoError(t, err)
@@ -119,7 +119,8 @@ func TestReviewAddCommentCommand_GraphQLOnly(t *testing.T) {
 	assert.Equal(t, float64(12), payload["line"])
 }
 
-func TestReviewAddCommentCommandRequiresGraphQLReviewID(t *testing.T) {
+// Exercises the deprecated add-comment alias alongside the review-id guard.
+func TestReviewCommentCommandRequiresGraphQLReviewID(t *testing.T) {
 	originalFactory := apiClientFactory
 	defer func() { apiClientFactory = originalFactory }()
 
@@ -132,7 +133,7 @@ func TestReviewAddCommentCommandRequiresGraphQLReviewID(t *testing.T) {
 	root := newRootCommand()
 	root.SetOut(&bytes.Buffer{})
 	root.SetErr(&bytes.Buffer{})
-	root.SetArgs([]string{"review", "--add-comment", "--review-id", "123", "--path", "scenario.md", "--line", "12", "--body", "note", "--repo", "octo/demo", "7"})
+	root.SetArgs([]string{"review", "add-comment", "--review-id", "123", "--path", "scenario.md", "--line", "12", "--body", "note", "--repo", "octo/demo", "7"})
 
 	err := root.Execute()
 	require.Error(t, err)
@@ -167,7 +168,7 @@ func TestReviewSubmitCommand(t *testing.T) {
 	stderr := &bytes.Buffer{}
 	root.SetOut(stdout)
 	root.SetErr(stderr)
-	root.SetArgs([]string{"review", "--submit", "--review-id", "PRR_kwM123", "--event", "COMMENT", "--body", "Please update", "--repo", "octo/demo", "7"})
+	root.SetArgs([]string{"review", "submit", "--review-id", "PRR_kwM123", "--event", "COMMENT", "--body", "Please update", "--repo", "octo/demo", "7"})
 
 	err := root.Execute()
 	require.NoError(t, err)
@@ -193,7 +194,7 @@ func TestReviewSubmitCommandRequiresGraphQLReviewID(t *testing.T) {
 	stderr := &bytes.Buffer{}
 	root.SetOut(stdout)
 	root.SetErr(stderr)
-	root.SetArgs([]string{"review", "--submit", "--review-id", "511", "--event", "APPROVE", "--repo", "octo/demo", "7"})
+	root.SetArgs([]string{"review", "submit", "--review-id", "511", "--event", "APPROVE", "--repo", "octo/demo", "7"})
 
 	err := root.Execute()
 	require.Error(t, err)
@@ -215,7 +216,7 @@ func TestReviewSubmitCommandRejectsNonPRRPrefix(t *testing.T) {
 	stderr := &bytes.Buffer{}
 	root.SetOut(stdout)
 	root.SetErr(stderr)
-	root.SetArgs([]string{"review", "--submit", "--review-id", "RANDOM_ID", "--event", "COMMENT", "--repo", "octo/demo", "7"})
+	root.SetArgs([]string{"review", "submit", "--review-id", "RANDOM_ID", "--event", "COMMENT", "--repo", "octo/demo", "7"})
 
 	err := root.Execute()
 	require.Error(t, err)
@@ -243,7 +244,7 @@ func TestReviewSubmitCommandAllowsNullReview(t *testing.T) {
 	stdout := &bytes.Buffer{}
 	root.SetOut(stdout)
 	root.SetErr(&bytes.Buffer{})
-	root.SetArgs([]string{"review", "--submit", "--review-id", "PRR_kwM123", "--event", "COMMENT", "--repo", "octo/demo", "7"})
+	root.SetArgs([]string{"review", "submit", "--review-id", "PRR_kwM123", "--event", "COMMENT", "--repo", "octo/demo", "7"})
 
 	err := root.Execute()
 	require.NoError(t, err)
@@ -266,7 +267,7 @@ func TestReviewSubmitCommandHandlesGraphQLErrors(t *testing.T) {
 	stdout := &bytes.Buffer{}
 	root.SetOut(stdout)
 	root.SetErr(&bytes.Buffer{})
-	root.SetArgs([]string{"review", "--submit", "--review-id", "PRR_kwM123", "--event", "COMMENT", "--repo", "octo/demo", "7"})
+	root.SetArgs([]string{"review", "submit", "--review-id", "PRR_kwM123", "--event", "COMMENT", "--repo", "octo/demo", "7"})
 
 	err := root.Execute()
 	require.Error(t, err)

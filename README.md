@@ -43,7 +43,7 @@ The quickest path from opening a pending review to resolving threads:
    node).
 
    ```sh
-   gh pr-review review --start -R owner/repo 42
+   gh pr-review review start -R owner/repo 42
 
    {
      "id": "PRR_kwDOAAABbcdEFG12",
@@ -54,11 +54,11 @@ The quickest path from opening a pending review to resolving threads:
    Pending reviews omit `submitted_at`; the field appears after submission.
 
 3. **Add inline comments with the pending review ID (GraphQL).** The
-   `review --add-comment` command fails fast if you supply a numeric ID instead
+   `review comment` command fails fast if you supply a numeric ID instead
    of the required `PRR_…` GraphQL identifier.
 
    ```sh
-   gh pr-review review --add-comment \
+   gh pr-review review comment \
      --review-id PRR_kwDOAAABbcdEFG12 \
      --path internal/service.go \
      --line 42 \
@@ -121,7 +121,7 @@ The quickest path from opening a pending review to resolving threads:
    troubleshooting.
 
    ```sh
-   gh pr-review review --submit \
+   gh pr-review review submit \
      --review-id PRR_kwDOAAABbcdEFG12 \
      --event REQUEST_CHANGES \
      --body "Please add tests" \
@@ -246,10 +246,10 @@ Each command binds to a single GitHub backend—there are no runtime fallbacks.
 
 | Command | Backend | Notes |
 | --- | --- | --- |
-| `review --start` | GraphQL | Opens a pending review via `addPullRequestReview`. |
-| `review --add-comment` | GraphQL | Requires a `PRR_…` review node ID. |
+| `review start` | GraphQL | Opens a pending review via `addPullRequestReview`. |
+| `review comment` | GraphQL | Requires a `PRR_…` review node ID. |
 | `review view` | GraphQL | Aggregates reviews, inline comments, and replies (used for thread IDs). |
-| `review --submit` | GraphQL | Finalizes a pending review via `submitPullRequestReview` using the `PRR_…` review node ID (executed through the internal `gh api graphql` wrapper). |
+| `review submit` | GraphQL | Finalizes a pending review via `submitPullRequestReview` using the `PRR_…` review node ID (executed through the internal `gh api graphql` wrapper). |
 | `comments reply` | GraphQL | Replies via `addPullRequestReviewThreadReply`; supply `--review-id` when responding from a pending review. |
 | `threads list` | GraphQL | Enumerates review threads for the pull request. |
 | `threads resolve` / `unresolve` | GraphQL | Mutates thread resolution via `resolveReviewThread` / `unresolveReviewThread`; supply GraphQL thread node IDs (`PRRT_…`). |

@@ -8,7 +8,7 @@ All commands accept pull request selectors as either:
 Unless stated otherwise, commands emit JSON only. Optional fields are omitted
 instead of serializing as `null`. Array responses default to `[]`.
 
-## review --start (GraphQL only)
+## review start (GraphQL only)
 
 - **Purpose:** Open (or resume) a pending review on the head commit.
 - **Inputs:**
@@ -21,7 +21,7 @@ instead of serializing as `null`. Array responses default to `[]`.
   `id` and `state`; optional `submitted_at`.
 
 ```sh
-gh pr-review review --start -R owner/repo 42
+gh pr-review review start -R owner/repo 42
 
 {
   "id": "PRR_kwDOAAABbcdEFG12",
@@ -29,9 +29,11 @@ gh pr-review review --start -R owner/repo 42
 }
 ```
 
-## review --add-comment (GraphQL only)
+## review comment (GraphQL only)
 
-- **Purpose:** Attach an inline thread to an existing pending review.
+- **Purpose:** Start a new inline thread on an existing pending review. Each
+  call creates a fresh thread; replying to an existing thread is
+  `comments reply`.
 - **Inputs:**
   - `--review-id` **(required):** GraphQL review node ID (must start with
     `PRR_`). Numeric IDs are rejected.
@@ -42,7 +44,7 @@ gh pr-review review --start -R owner/repo 42
   `id`, `path`, `is_outdated`; optional `line`.
 
 ```sh
-gh pr-review review --add-comment \
+gh pr-review review comment \
   --review-id PRR_kwDOAAABbcdEFG12 \
   --path internal/service.go \
   --line 42 \
@@ -104,7 +106,7 @@ The `thread_id` values surfaced in the report feed directly into
 comments and replies with GraphQL `comment_node_id` fields; those keys remain
 omitted otherwise.
 
-## review --submit (GraphQL only)
+## review submit (GraphQL only)
 
 - **Purpose:** Finalize a pending review as COMMENT, APPROVE, or
   REQUEST_CHANGES.
@@ -120,7 +122,7 @@ omitted otherwise.
   "errors": [...] }` and exits non-zero.
 
 ```sh
-gh pr-review review --submit \
+gh pr-review review submit \
   --review-id PRR_kwDOAAABbcdEFG12 \
   --event REQUEST_CHANGES \
   --body "Please cover edge cases" \

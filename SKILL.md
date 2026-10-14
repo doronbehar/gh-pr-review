@@ -82,13 +82,13 @@ gh pr-review threads resolve -R owner/repo <pr-number> --thread-id <PRRT_...>
 Start a pending review:
 
 ```sh
-gh pr-review review --start -R owner/repo <pr-number>
+gh pr-review review start -R owner/repo <pr-number>
 ```
 
 Add inline comments to pending review:
 
 ```sh
-gh pr-review review --add-comment \
+gh pr-review review comment \
   --review-id <PRR_...> \
   --path <file-path> \
   --line <line-number> \
@@ -99,7 +99,7 @@ gh pr-review review --add-comment \
 Submit the review:
 
 ```sh
-gh pr-review review --submit \
+gh pr-review review submit \
   --review-id <PRR_...> \
   --event <APPROVE|REQUEST_CHANGES|COMMENT> \
   --body "Overall review summary" \
@@ -173,9 +173,9 @@ gh pr-review review view --unresolved --not_outdated -R owner/repo --pr $(gh pr 
 
 ### Create Review with Inline Comments
 
-1. Start: `gh pr-review review --start -R owner/repo <pr>`
-2. Add comments: `gh pr-review review --add-comment -R owner/repo <pr> --review-id <PRR_...> --path <file> --line <num> --body "..."`
-3. Submit: `gh pr-review review --submit -R owner/repo <pr> --review-id <PRR_...> --event REQUEST_CHANGES --body "Summary"`
+1. Start: `gh pr-review review start -R owner/repo <pr>`
+2. Add comments: `gh pr-review review comment -R owner/repo <pr> --review-id <PRR_...> --path <file> --line <num> --body "..."`
+3. Submit: `gh pr-review review submit -R owner/repo <pr> --review-id <PRR_...> --event REQUEST_CHANGES --body "Summary"`
 
 ## Important Notes
 

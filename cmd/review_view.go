@@ -2,17 +2,15 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 	"sort"
 	"strings"
 
 	"github.com/spf13/cobra"
 
 	"github.com/agynio/gh-pr-review/internal/report"
-	"github.com/agynio/gh-pr-review/internal/resolver"
 )
 
-func newReviewViewCommand() *cobra.Command {
+func newReviewViewCommand(shared *reviewOptions) *cobra.Command {
 	opts := &reviewViewOptions{}
 
 	cmd := &cobra.Command{
@@ -20,15 +18,10 @@ func newReviewViewCommand() *cobra.Command {
 		Short: "View a structured review summary (GraphQL)",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if len(args) > 0 {
-				opts.Selector = args[0]
-			}
-			return runReviewView(cmd, opts)
+			return runReviewView(cmd, shared, opts, args)
 		},
 	}
 
-	cmd.Flags().StringVarP(&opts.Repo, "repo", "R", "", "Repository in 'owner/repo' format")
-	cmd.Flags().IntVar(&opts.Pull, "pr", 0, "Pull request number")
 	cmd.Flags().StringVar(&opts.Reviewer, "reviewer", "", "Filter to a specific reviewer (login)")
 	cmd.Flags().StringSliceVar(&opts.States, "states", nil, "Comma-separated review states (APPROVED, CHANGES_REQUESTED, COMMENTED, DISMISSED)")
 	cmd.Flags().BoolVar(&opts.Unresolved, "unresolved", false, "Only include unresolved threads")
@@ -40,9 +33,6 @@ func newReviewViewCommand() *cobra.Command {
 }
 
 type reviewViewOptions struct {
-	Repo                 string
-	Pull                 int
-	Selector             string
 	Reviewer             string
 	States               []string
 	Unresolved           bool
@@ -51,14 +41,9 @@ type reviewViewOptions struct {
 	IncludeCommentNodeID bool
 }
 
-func runReviewView(cmd *cobra.Command, opts *reviewViewOptions) error {
+func runReviewView(cmd *cobra.Command, shared *reviewOptions, opts *reviewViewOptions, args []string) error {
 	if opts.TailReplies < 0 {
 		return fmt.Errorf("invalid --tail value %d: must be non-negative", opts.TailReplies)
-	}
-
-	selector, err := resolver.NormalizeSelector(opts.Selector, opts.Pull)
-	if err != nil {
-		return err
 	}
 
 	states, statesProvided, err := parseStateFilters(opts.States)
@@ -66,7 +51,7 @@ func runReviewView(cmd *cobra.Command, opts *reviewViewOptions) error {
 		return err
 	}
 
-	identity, err := resolver.Resolve(selector, opts.Repo, os.Getenv("GH_HOST"))
+	identity, err := shared.identity(args)
 	if err != nil {
 		return err
 	}
