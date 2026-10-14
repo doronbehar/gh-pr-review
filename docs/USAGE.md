@@ -4,6 +4,13 @@ All commands accept pull request selectors as either:
 
 - a pull request URL (`https://github.com/owner/repo/pull/123`)
 - a pull request number when combined with `-R owner/repo`
+- nothing at all, inside a git repository: `-R` is inferred from the git
+  remotes via `gh repo view` (honoring `gh repo set-default`), and the pull
+  request number from the checked out branch via `gh pr view`
+
+Branch inference only applies when `-R` is inferred as well, and a pull request
+URL skips inference entirely. Explicit values always win, and a failed
+inference reports the `gh` command that could not answer.
 
 Unless stated otherwise, commands emit JSON only. Optional fields are omitted
 instead of serializing as `null`. Array responses default to `[]`.

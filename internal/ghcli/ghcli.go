@@ -210,6 +210,53 @@ func (c *Client) GraphQL(query string, variables map[string]interface{}, result 
 	return nil
 }
 
+// commandError reports the failure of a `gh` command other than `gh api`,
+// preferring what the command itself wrote over the exit status.
+func commandError(command string, err error, stdout []byte, stderr string) error {
+	message := strings.TrimSpace(stderr)
+	if message == "" {
+		message = strings.TrimSpace(string(stdout))
+	}
+	if message == "" {
+		return fmt.Errorf("%s: %w", command, err)
+	}
+	return fmt.Errorf("%s: %s", command, message)
+}
+
+// CurrentRepo returns the "owner/repo" for the current working directory
+// by delegating to `gh repo view`. This respects `gh repo set-default`
+// and the git remote configuration.
+func CurrentRepo() (string, error) {
+	stdout, stderr, err := runGh([]string{"repo", "view", "--json", "nameWithOwner", "-q", ".nameWithOwner"}, nil)
+	if err != nil {
+		return "", commandError("gh repo view", err, stdout, stderr)
+	}
+	result := strings.TrimSpace(string(stdout))
+	if result == "" {
+		return "", fmt.Errorf("gh repo view returned empty nameWithOwner")
+	}
+	return result, nil
+}
+
+// CurrentPR returns the pull request number for the current branch
+// by delegating to `gh pr view`. Returns 0 and an error if the current
+// branch has no associated pull request.
+func CurrentPR() (int, error) {
+	stdout, stderr, err := runGh([]string{"pr", "view", "--json", "number", "-q", ".number"}, nil)
+	if err != nil {
+		return 0, commandError("gh pr view", err, stdout, stderr)
+	}
+	result := strings.TrimSpace(string(stdout))
+	if result == "" {
+		return 0, fmt.Errorf("gh pr view returned empty number")
+	}
+	n, err := strconv.Atoi(result)
+	if err != nil {
+		return 0, fmt.Errorf("gh pr view returned non-numeric number: %q", result)
+	}
+	return n, nil
+}
+
 // runGh executes the `gh` CLI command with provided arguments and optional stdin data.
 func runGh(args []string, stdin []byte) ([]byte, string, error) {
 	cmd := exec.Command("gh", args...)

@@ -50,6 +50,13 @@ func NormalizeSelector(selector string, prFlag int) (string, error) {
 	return "", fmt.Errorf("invalid pull request selector %q: must be a pull request URL or number", selector)
 }
 
+// IsPullURL reports whether the selector is a pull request URL, which carries
+// the host, repository, and number on its own.
+func IsPullURL(selector string) bool {
+	_, err := parsePullURL(strings.TrimSpace(selector))
+	return err == nil
+}
+
 // Resolve interprets a selector, optional repo flag, and host (GH_HOST) into a concrete pull request identity.
 func Resolve(selector, repoFlag, host string) (Identity, error) {
 	selector = strings.TrimSpace(selector)

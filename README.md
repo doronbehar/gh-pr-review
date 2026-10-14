@@ -40,10 +40,15 @@ The quickest path from opening a pending review to resolving threads:
 
 
 2. **Start a pending review (GraphQL).** Capture the returned `id` (GraphQL
-   node).
+   node). Inside a git repository, `-R owner/repo` and the pull request number
+   are inferred from the git context, so both can be omitted.
 
    ```sh
+   # Explicit (works anywhere)
    gh pr-review review start -R owner/repo 42
+
+   # Inferred (inside the repo, on a branch with an open pull request)
+   gh pr-review review start
 
    {
      "id": "PRR_kwDOAAABbcdEFG12",
@@ -169,6 +174,30 @@ The quickest path from opening a pending review to resolving threads:
    }
    ```
 
+## Repository and pull request inference
+
+Every command takes the pull request to act on from the first of these that is
+available:
+
+1. A pull request URL or number given as an argument, or `-R owner/repo` with
+   `--pr`. Explicit values always win.
+2. `-R owner/repo` inferred from the current directory, via `gh repo view`, so
+   it follows your git remotes and `gh repo set-default`.
+3. The pull request number inferred from the checked out branch, via
+   `gh pr view`.
+
+Branch inference only applies when the repository was inferred too: an explicit
+`-R` may name a repository the working directory knows nothing about, so the
+checked out branch is not used to pick a pull request there. A pull request URL
+carries its own host, repository, and number, so it skips inference entirely.
+
+When inference cannot answer, the command says what it tried:
+
+```console
+$ gh pr-review review view
+no pull request given and none could be inferred from the current branch: gh pr view: no pull requests found for branch "fork"
+```
+
 ## Review view
 
 `gh pr-review review view` emits a GraphQL-only snapshot of pull request
@@ -177,10 +206,13 @@ replies, omitting optional fields entirely instead of returning `null`. The
 same command is available as `gh pr-review comments view`, next to
 `comments reply`, which consumes the thread IDs it reports.
 
-Run it with either a combined selector or explicit flags:
+Run it with a combined selector, explicit flags, or nothing at all:
 
 ```sh
 gh pr-review review view -R owner/repo --pr 3
+
+# Inferred from the git context
+gh pr-review review view
 ```
 
 Install or upgrade to **v1.6.0 or newer** (GraphQL-only thread resolution and minimal comment replies):
@@ -334,13 +366,13 @@ All commands return structured JSON optimized for agent consumption with minimal
 ### Example Agent Workflow
 
 ```
-User: "Show me unresolved comments on PR #42"
-Agent: gh pr-review review view -R owner/repo --pr 42 --unresolved --not_outdated
+User: "Show me unresolved comments on this PR"
+Agent: gh pr-review review view --unresolved --not_outdated
 Agent: [Parses JSON, summarizes 3 unresolved threads]
 
 User: "Reply to the comment about error handling"
-Agent: gh pr-review comments reply 42 -R owner/repo --thread-id PRRT_... --body "Fixed in commit abc123"
-Agent: gh pr-review threads resolve 42 -R owner/repo --thread-id PRRT_...
+Agent: gh pr-review comments reply --thread-id PRRT_... --body "Fixed in commit abc123"
+Agent: gh pr-review threads resolve --thread-id PRRT_...
 ```
 
 ### Skill Documentation

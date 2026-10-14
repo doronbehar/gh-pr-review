@@ -32,6 +32,18 @@ First, ensure the extension is installed:
 gh extension install agynio/gh-pr-review
 ```
 
+## Repository and PR Inference
+
+When run inside a git repository, `-R owner/repo` and the pull request number
+are **inferred automatically** — `-R` from the git remotes (honoring
+`gh repo set-default`) and the number from the checked out branch. Pass them
+explicitly to target a different repository or pull request; explicit values
+always win.
+
+Branch inference only applies when `-R` is also inferred, since an explicit
+`-R` may name a repository unrelated to the working directory. A pull request
+URL needs no inference at all.
+
 ## Core Commands
 
 ### 1. View All Reviews and Threads
@@ -42,6 +54,8 @@ Get complete review context with inline comments and thread replies:
 gh pr-review review view -R owner/repo --pr <number>
 # same command, next to `comments reply`
 gh pr-review comments view -R owner/repo --pr <number>
+# repo and PR inferred from the git context
+gh pr-review review view
 ```
 
 **Useful filters:**
@@ -152,32 +166,33 @@ Example output structure:
 
 ## Best Practices
 
-1. **Always use `-R owner/repo`** to specify the repository explicitly
-2. **Use `--unresolved` and `--not_outdated`** to focus on actionable comments
-3. **Save thread_id values** from `review view` output for replying
-4. **Filter by reviewer** when dealing with specific review feedback
-5. **Use `--tail 1`** to reduce output size by keeping only latest replies
-6. **Parse JSON output** instead of trying to scrape text
+1. **Rely on inference** inside a git repo — `-R` and the PR number are optional
+2. **Use `-R owner/repo`** explicitly when targeting another repository
+3. **Use `--unresolved` and `--not_outdated`** to focus on actionable comments
+4. **Save thread_id values** from `review view` output for replying
+5. **Filter by reviewer** when dealing with specific review feedback
+6. **Use `--tail 1`** to reduce output size by keeping only latest replies
+7. **Parse JSON output** instead of trying to scrape text
 
 ## Common Workflows
 
 ### Get Unresolved Comments for Current PR
 
 ```sh
-gh pr-review review view --unresolved --not_outdated -R owner/repo --pr $(gh pr view --json number -q .number)
+gh pr-review review view --unresolved --not_outdated
 ```
 
 ### Reply to All Unresolved Comments
 
-1. Get unresolved threads: `gh pr-review threads list --unresolved -R owner/repo <pr>`
-2. For each thread_id, reply: `gh pr-review comments reply <pr> -R owner/repo --thread-id <id> --body "..."`
-3. Optionally resolve: `gh pr-review threads resolve <pr> -R owner/repo --thread-id <id>`
+1. Get unresolved threads: `gh pr-review threads list --unresolved`
+2. For each thread_id, reply: `gh pr-review comments reply --thread-id <id> --body "..."`
+3. Optionally resolve: `gh pr-review threads resolve --thread-id <id>`
 
 ### Create Review with Inline Comments
 
-1. Start: `gh pr-review review start -R owner/repo <pr>`
-2. Add comments: `gh pr-review review comment -R owner/repo <pr> --review-id <PRR_...> --path <file> --line <num> --body "..."`
-3. Submit: `gh pr-review review submit -R owner/repo <pr> --review-id <PRR_...> --event REQUEST_CHANGES --body "Summary"`
+1. Start: `gh pr-review review start`
+2. Add comments: `gh pr-review review comment --review-id <PRR_...> --path <file> --line <num> --body "..."`
+3. Submit: `gh pr-review review submit --review-id <PRR_...> --event REQUEST_CHANGES --body "Summary"`
 
 ## Important Notes
 

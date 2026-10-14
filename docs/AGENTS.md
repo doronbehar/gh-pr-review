@@ -4,6 +4,10 @@ You have a pre-installed `gh pr-review` extension that simplifies working with P
 ## Quick PR overview with gh
 View details: `gh pr-review review view <PR number> -R <owner>/<repo>`
 
+Inside a git repository both can be omitted — `gh pr-review review view` infers
+the repository from the git remotes and the pull request from the checked out
+branch. The explicit forms below stay valid and take precedence.
+
 Default scope:
 - Includes every reviewer and review state (APPROVED, CHANGES_REQUESTED,
   COMMENTED, DISMISSED).
