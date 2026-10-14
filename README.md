@@ -174,6 +174,19 @@ The quickest path from opening a pending review to resolving threads:
    }
    ```
 
+## Authentication
+
+Requests go to the GitHub API over HTTP from this process; the `gh` binary is
+not invoked to make them. Credentials are resolved the way gh resolves them:
+
+1. `GH_TOKEN` / `GITHUB_TOKEN` (or their `GH_ENTERPRISE_TOKEN` counterparts).
+2. The token stored in gh's `hosts.yml`.
+3. gh's secure storage, read through `gh auth token`, for logins that keep the
+   token in the system keyring.
+
+With no credentials at all, commands say so rather than reporting a missing
+repository.
+
 ## Repository and pull request inference
 
 Every command takes the pull request to act on from the first of these that is
@@ -181,10 +194,15 @@ available:
 
 1. A pull request URL or number given as an argument, or `-R owner/repo` with
    `--pr`. Explicit values always win.
-2. `-R owner/repo` inferred from the current directory, via `gh repo view`, so
-   it follows your git remotes and `gh repo set-default`.
-3. The pull request number inferred from the checked out branch, via
-   `gh pr view`.
+2. `-R owner/repo` read from the git remotes, by the same rules gh applies: the
+   `GH_REPO` override, `gh repo set-default`, ssh host aliases, and `upstream`
+   before `origin`. This is local configuration only — no API request.
+3. The pull request number from the checked out branch: the one open pull
+   request whose head ref is that branch. `branch.<name>.merge` is honored, so
+   a local branch tracking a differently named remote branch still resolves.
+
+The remote also supplies the host when `GH_HOST` does not, so an enterprise
+checkout resolves without extra configuration.
 
 Branch inference only applies when the repository was inferred too: an explicit
 `-R` may name a repository the working directory knows nothing about, so the
@@ -195,7 +213,15 @@ When inference cannot answer, the command says what it tried:
 
 ```console
 $ gh pr-review review view
-no pull request given and none could be inferred from the current branch: gh pr view: no pull requests found for branch "fork"
+no pull request given and none could be inferred: no open pull request found for branch "fork" in agynio/gh-pr-review
+```
+
+Several forks can push the same branch name, so a branch heading more than one
+open pull request is reported rather than guessed at:
+
+```console
+$ gh pr-review review view
+no pull request given and none could be inferred: branch "patch-1" heads 2 open pull requests (#11 from alice, #12 from bob)
 ```
 
 ## Review view
@@ -283,7 +309,7 @@ Each command binds to a single GitHub backend—there are no runtime fallbacks.
 | `review start` | GraphQL | Opens a pending review via `addPullRequestReview`. |
 | `review comment` | GraphQL | Requires a `PRR_…` review node ID. |
 | `review view` | GraphQL | Aggregates reviews, inline comments, and replies (used for thread IDs). Also available as `comments view`. |
-| `review submit` | GraphQL | Finalizes a pending review via `submitPullRequestReview` using the `PRR_…` review node ID (executed through the internal `gh api graphql` wrapper). |
+| `review submit` | GraphQL | Finalizes a pending review via `submitPullRequestReview` using the `PRR_…` review node ID. |
 | `comments reply` | GraphQL | Replies via `addPullRequestReviewThreadReply`; supply `--review-id` when responding from a pending review. |
 | `threads list` | GraphQL | Enumerates review threads for the pull request. |
 | `threads resolve` / `unresolve` | GraphQL | Mutates thread resolution via `resolveReviewThread` / `unresolveReviewThread`; supply GraphQL thread node IDs (`PRRT_…`). |

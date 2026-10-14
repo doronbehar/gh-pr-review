@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/agynio/gh-pr-review/internal/ghcli"
+	"github.com/agynio/gh-pr-review/internal/ghapi"
 	"github.com/agynio/gh-pr-review/internal/resolver"
 )
 
 // Service coordinates review GraphQL operations through the gh CLI.
 type Service struct {
-	API ghcli.API
+	API ghapi.API
 }
 
 // ErrViewerLoginUnavailable indicates the authenticated viewer login could not be resolved via GraphQL.
@@ -27,7 +27,7 @@ type ReviewState struct {
 // SubmitStatus represents the outcome of a review submission mutation.
 type SubmitStatus struct {
 	Success bool
-	Errors  []ghcli.GraphQLErrorEntry
+	Errors  []ghapi.GraphQLErrorEntry
 }
 
 // ReviewThread represents an inline comment thread added to a pending review.
@@ -57,7 +57,7 @@ type SubmitInput struct {
 }
 
 // NewService constructs a review Service.
-func NewService(api ghcli.API) *Service {
+func NewService(api ghapi.API) *Service {
 	return &Service{API: api}
 }
 
@@ -222,7 +222,7 @@ func (s *Service) Submit(_ resolver.Identity, input SubmitInput) (*SubmitStatus,
 
 	var response struct{}
 	if err := s.API.GraphQL(query, variables, &response); err != nil {
-		var gqlErr *ghcli.GraphQLError
+		var gqlErr *ghapi.GraphQLError
 		if errors.As(err, &gqlErr) {
 			return &SubmitStatus{Success: false, Errors: gqlErr.Errors}, nil
 		}

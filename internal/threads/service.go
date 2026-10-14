@@ -7,17 +7,17 @@ import (
 	"strings"
 	"time"
 
-	"github.com/agynio/gh-pr-review/internal/ghcli"
+	"github.com/agynio/gh-pr-review/internal/ghapi"
 	"github.com/agynio/gh-pr-review/internal/resolver"
 )
 
 // Service exposes pull request review thread operations.
 type Service struct {
-	API ghcli.API
+	API ghapi.API
 }
 
 // NewService constructs a Service with the provided API client.
-func NewService(api ghcli.API) *Service {
+func NewService(api ghapi.API) *Service {
 	return &Service{API: api}
 }
 

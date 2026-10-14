@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/agynio/gh-pr-review/internal/ghcli"
+	"github.com/agynio/gh-pr-review/internal/ghapi"
 	"github.com/agynio/gh-pr-review/internal/resolver"
 )
 
@@ -18,7 +18,7 @@ const (
 
 // Service fetches and shapes pull request review reports.
 type Service struct {
-	API ghcli.API
+	API ghapi.API
 }
 
 // Options controls data retrieval and shaping for the report.
@@ -33,7 +33,7 @@ type Options struct {
 }
 
 // NewService constructs a report service using the provided GraphQL API client.
-func NewService(api ghcli.API) *Service {
+func NewService(api ghapi.API) *Service {
 	return &Service{API: api}
 }
 

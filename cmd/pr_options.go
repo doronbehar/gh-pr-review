@@ -3,9 +3,11 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 
+	"github.com/agynio/gh-pr-review/internal/pulls"
 	"github.com/agynio/gh-pr-review/internal/resolver"
 )
 
@@ -33,7 +35,8 @@ func (o *prOptions) identity(args []string) (resolver.Identity, error) {
 		o.Selector = args[0]
 	}
 
-	if err := o.infer(); err != nil {
+	host, err := o.infer(strings.TrimSpace(os.Getenv("GH_HOST")))
+	if err != nil {
 		return resolver.Identity{}, err
 	}
 
@@ -42,35 +45,58 @@ func (o *prOptions) identity(args []string) (resolver.Identity, error) {
 		return resolver.Identity{}, err
 	}
 
-	return resolver.Resolve(selector, o.Repo, os.Getenv("GH_HOST"))
+	return resolver.Resolve(selector, o.Repo, host)
 }
 
-// infer fills in the repository and pull request from the current directory
-// and branch when the flags leave them unset.
-func (o *prOptions) infer() error {
+// infer fills in the repository and pull request from the git context when the
+// flags leave them unset, and reports the host to resolve against: the
+// inferred remote's host unless GH_HOST names one.
+func (o *prOptions) infer(host string) (string, error) {
 	// A pull request URL carries the host, repository, and number already.
 	if resolver.IsPullURL(o.Selector) {
-		return nil
+		return host, nil
 	}
 
 	repoGiven := o.Repo != ""
 	if !repoGiven {
 		repo, err := currentRepo()
 		if err != nil {
-			return fmt.Errorf("no --repo given and none could be inferred from the current directory: %w", err)
+			return host, fmt.Errorf("no --repo given and none could be inferred from the git remotes: %w", err)
 		}
-		o.Repo = repo
+		o.Repo = repo.Slug()
+		if host == "" {
+			host = repo.Host
+		}
 	}
 
 	// Only infer the pull request alongside the repository: the checked out
 	// branch says nothing about a repository named by --repo.
 	if o.Selector == "" && o.Pull == 0 && !repoGiven {
-		number, err := currentPR()
+		number, err := o.inferPull(host)
 		if err != nil {
-			return fmt.Errorf("no pull request given and none could be inferred from the current branch: %w", err)
+			return host, err
 		}
 		o.Pull = number
 	}
 
-	return nil
+	return host, nil
+}
+
+// inferPull looks up the open pull request that the checked out branch heads.
+func (o *prOptions) inferPull(host string) (int, error) {
+	branch, err := currentBranch()
+	if err != nil {
+		return 0, fmt.Errorf("no pull request given and the current branch could not be determined: %w", err)
+	}
+
+	owner, name, found := strings.Cut(o.Repo, "/")
+	if !found {
+		return 0, fmt.Errorf("no pull request given and repository %q is not in owner/repo form", o.Repo)
+	}
+
+	number, err := pulls.FindByBranch(apiClientFactory(host), owner, name, branch)
+	if err != nil {
+		return 0, fmt.Errorf("no pull request given and none could be inferred: %w", err)
+	}
+	return number, nil
 }

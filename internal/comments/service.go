@@ -4,7 +4,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/agynio/gh-pr-review/internal/ghcli"
+	"github.com/agynio/gh-pr-review/internal/ghapi"
 	"github.com/agynio/gh-pr-review/internal/resolver"
 )
 
@@ -49,7 +49,7 @@ const threadDetailsQuery = `query PullRequestReviewThreadDetails($id: ID!) {
 
 // Service provides high-level review comment operations.
 type Service struct {
-	API ghcli.API
+	API ghapi.API
 }
 
 // ReplyOptions contains the payload for replying to a review comment thread.
@@ -108,7 +108,7 @@ type threadDetails struct {
 }
 
 // NewService constructs a Service using the provided API client.
-func NewService(api ghcli.API) *Service {
+func NewService(api ghapi.API) *Service {
 	return &Service{API: api}
 }
 

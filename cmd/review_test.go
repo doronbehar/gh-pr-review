@@ -6,7 +6,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/agynio/gh-pr-review/internal/ghcli"
+	"github.com/agynio/gh-pr-review/internal/ghapi"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -46,7 +46,7 @@ func TestReviewStartCommand_GraphQLOnly(t *testing.T) {
 			return errors.New("unexpected graphql invocation")
 		}
 	}
-	apiClientFactory = func(host string) ghcli.API { return fake }
+	apiClientFactory = func(host string) ghapi.API { return fake }
 
 	root := newRootCommand()
 	stdout := &bytes.Buffer{}
@@ -98,7 +98,7 @@ func TestReviewCommentCommand_GraphQLOnly(t *testing.T) {
 		}
 		return assignJSON(result, payload)
 	}
-	apiClientFactory = func(host string) ghcli.API { return fake }
+	apiClientFactory = func(host string) ghapi.API { return fake }
 
 	root := newRootCommand()
 	stdout := &bytes.Buffer{}
@@ -128,7 +128,7 @@ func TestReviewCommentCommandRequiresGraphQLReviewID(t *testing.T) {
 	fake.graphqlFunc = func(query string, variables map[string]interface{}, result interface{}) error {
 		return errors.New("unexpected graphql invocation")
 	}
-	apiClientFactory = func(host string) ghcli.API { return fake }
+	apiClientFactory = func(host string) ghapi.API { return fake }
 
 	root := newRootCommand()
 	root.SetOut(&bytes.Buffer{})
@@ -161,7 +161,7 @@ func TestReviewSubmitCommand(t *testing.T) {
 			},
 		})
 	}
-	apiClientFactory = func(host string) ghcli.API { return fake }
+	apiClientFactory = func(host string) ghapi.API { return fake }
 
 	root := newRootCommand()
 	stdout := &bytes.Buffer{}
@@ -187,7 +187,7 @@ func TestReviewSubmitCommandRequiresGraphQLReviewID(t *testing.T) {
 	fake.graphqlFunc = func(query string, variables map[string]interface{}, result interface{}) error {
 		return errors.New("unexpected GraphQL call")
 	}
-	apiClientFactory = func(host string) ghcli.API { return fake }
+	apiClientFactory = func(host string) ghapi.API { return fake }
 
 	root := newRootCommand()
 	stdout := &bytes.Buffer{}
@@ -209,7 +209,7 @@ func TestReviewSubmitCommandRejectsNonPRRPrefix(t *testing.T) {
 	fake.graphqlFunc = func(query string, variables map[string]interface{}, result interface{}) error {
 		return errors.New("unexpected GraphQL call")
 	}
-	apiClientFactory = func(host string) ghcli.API { return fake }
+	apiClientFactory = func(host string) ghapi.API { return fake }
 
 	root := newRootCommand()
 	stdout := &bytes.Buffer{}
@@ -238,7 +238,7 @@ func TestReviewSubmitCommandAllowsNullReview(t *testing.T) {
 		}
 		return assignJSON(result, response)
 	}
-	apiClientFactory = func(host string) ghcli.API { return fake }
+	apiClientFactory = func(host string) ghapi.API { return fake }
 
 	root := newRootCommand()
 	stdout := &bytes.Buffer{}
@@ -259,9 +259,9 @@ func TestReviewSubmitCommandHandlesGraphQLErrors(t *testing.T) {
 
 	fake := &commandFakeAPI{}
 	fake.graphqlFunc = func(query string, variables map[string]interface{}, result interface{}) error {
-		return &ghcli.GraphQLError{Errors: []ghcli.GraphQLErrorEntry{{Message: "mutation failed", Path: []interface{}{"mutation", "submitPullRequestReview"}}}}
+		return &ghapi.GraphQLError{Errors: []ghapi.GraphQLErrorEntry{{Message: "mutation failed", Path: []interface{}{"mutation", "submitPullRequestReview"}}}}
 	}
-	apiClientFactory = func(host string) ghcli.API { return fake }
+	apiClientFactory = func(host string) ghapi.API { return fake }
 
 	root := newRootCommand()
 	stdout := &bytes.Buffer{}

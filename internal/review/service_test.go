@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/agynio/gh-pr-review/internal/ghcli"
+	"github.com/agynio/gh-pr-review/internal/ghapi"
 	"github.com/agynio/gh-pr-review/internal/resolver"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -284,7 +284,7 @@ func TestServiceSubmitHandlesNullReviewData(t *testing.T) {
 func TestServiceSubmitGraphQLErrors(t *testing.T) {
 	api := &fakeAPI{}
 	api.graphqlFunc = func(query string, variables map[string]interface{}, result interface{}) error {
-		return &ghcli.GraphQLError{Errors: []ghcli.GraphQLErrorEntry{{Message: "boom", Path: []interface{}{"mutation", "submit"}}}}
+		return &ghapi.GraphQLError{Errors: []ghapi.GraphQLErrorEntry{{Message: "boom", Path: []interface{}{"mutation", "submit"}}}}
 	}
 
 	svc := NewService(api)

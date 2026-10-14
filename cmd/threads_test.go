@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/agynio/gh-pr-review/internal/ghcli"
+	"github.com/agynio/gh-pr-review/internal/ghapi"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -80,7 +80,7 @@ func TestThreadsListCommandOutputsJSON(t *testing.T) {
 		}
 		return assignJSON(result, payload)
 	}
-	apiClientFactory = func(host string) ghcli.API { return fake }
+	apiClientFactory = func(host string) ghapi.API { return fake }
 
 	root := newRootCommand()
 	stdout := &bytes.Buffer{}
@@ -135,7 +135,7 @@ func TestThreadsResolveCommandByThreadID(t *testing.T) {
 			return errors.New("unexpected query")
 		}
 	}
-	apiClientFactory = func(host string) ghcli.API { return fake }
+	apiClientFactory = func(host string) ghapi.API { return fake }
 
 	root := newRootCommand()
 	stdout := &bytes.Buffer{}
@@ -188,7 +188,7 @@ func TestThreadsUnresolveCommandByThreadID(t *testing.T) {
 			return errors.New("unexpected query")
 		}
 	}
-	apiClientFactory = func(host string) ghcli.API { return fake }
+	apiClientFactory = func(host string) ghapi.API { return fake }
 
 	root := newRootCommand()
 	stdout := &bytes.Buffer{}

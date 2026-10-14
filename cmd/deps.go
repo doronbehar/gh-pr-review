@@ -1,14 +1,17 @@
 package cmd
 
-import "github.com/agynio/gh-pr-review/internal/ghcli"
+import (
+	"github.com/agynio/gh-pr-review/internal/ghapi"
+	"github.com/agynio/gh-pr-review/internal/gitctx"
+)
 
-var apiClientFactory = func(host string) ghcli.API {
-	return &ghcli.Client{Host: host}
+var apiClientFactory = func(host string) ghapi.API {
+	return &ghapi.Client{Host: host}
 }
 
-// currentRepo and currentPR read the git context that --repo and --pr are
+// currentRepo and currentBranch read the git context that --repo and --pr are
 // inferred from when they are omitted. Tests replace them.
 var (
-	currentRepo = ghcli.CurrentRepo
-	currentPR   = ghcli.CurrentPR
+	currentRepo   = gitctx.CurrentRepo
+	currentBranch = gitctx.CurrentBranch
 )

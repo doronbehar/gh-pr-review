@@ -2,127 +2,214 @@ package cmd
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"io"
+	"strings"
 	"testing"
 
-	"github.com/agynio/gh-pr-review/internal/ghcli"
+	"github.com/agynio/gh-pr-review/internal/ghapi"
+	"github.com/agynio/gh-pr-review/internal/gitctx"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 // stubGitContext replaces the inference seams for the duration of a test.
-func stubGitContext(t *testing.T, repo func() (string, error), pr func() (int, error)) {
+func stubGitContext(t *testing.T, repo func() (gitctx.Repo, error), branch func() (string, error)) {
 	t.Helper()
-	originalRepo, originalPR := currentRepo, currentPR
-	currentRepo, currentPR = repo, pr
-	t.Cleanup(func() { currentRepo, currentPR = originalRepo, originalPR })
+	originalRepo, originalBranch := currentRepo, currentBranch
+	currentRepo, currentBranch = repo, branch
+	t.Cleanup(func() { currentRepo, currentBranch = originalRepo, originalBranch })
 }
 
-func inferredRepo(name string) func() (string, error) {
+func inferredRepo(owner, name, host string) func() (gitctx.Repo, error) {
+	return func() (gitctx.Repo, error) {
+		return gitctx.Repo{Owner: owner, Name: name, Host: host}, nil
+	}
+}
+
+func inferredBranch(name string) func() (string, error) {
 	return func() (string, error) { return name, nil }
 }
 
-func inferredPR(number int) func() (int, error) {
-	return func() (int, error) { return number, nil }
+func repoInferenceBanned(t *testing.T) func() (gitctx.Repo, error) {
+	t.Helper()
+	return func() (gitctx.Repo, error) {
+		t.Error("repository inference should not have run")
+		return gitctx.Repo{}, errors.New("banned")
+	}
 }
 
-func repoInferenceBanned(t *testing.T) func() (string, error) {
+func branchInferenceBanned(t *testing.T) func() (string, error) {
 	t.Helper()
 	return func() (string, error) {
-		t.Error("repository inference should not have run")
+		t.Error("branch inference should not have run")
 		return "", errors.New("banned")
 	}
 }
 
-func prInferenceBanned(t *testing.T) func() (int, error) {
-	t.Helper()
-	return func() (int, error) {
-		t.Error("pull request inference should not have run")
-		return 0, errors.New("banned")
-	}
+// inferenceRun records what `review view` asked of the API while resolving.
+type inferenceRun struct {
+	hosts            []string
+	reportVariables  map[string]interface{}
+	lookupVariables  map[string]interface{}
+	lookupNumbers    []int
+	lookupHeadOwners []string
+	err              error
 }
 
-// runViewForInference executes `review view` against a recording fake and
-// returns the GraphQL variables it was called with.
-func runViewForInference(t *testing.T, args ...string) (map[string]interface{}, error) {
+// runViewForInference executes `review view`, answering the branch lookup with
+// lookupNumbers and the report with the canned payload.
+func runViewForInference(t *testing.T, run *inferenceRun, args ...string) {
 	t.Helper()
 
 	originalFactory := apiClientFactory
 	t.Cleanup(func() { apiClientFactory = originalFactory })
 
-	fake := &fakeViewAPI{payload: viewResponse, t: t}
-	apiClientFactory = func(host string) ghcli.API { return fake }
+	fake := &commandFakeAPI{}
+	fake.graphqlFunc = func(query string, variables map[string]interface{}, result interface{}) error {
+		if strings.Contains(query, "PullRequestsForBranch") {
+			run.lookupVariables = variables
+			nodes := make([]obj, 0, len(run.lookupNumbers))
+			for i, number := range run.lookupNumbers {
+				node := obj{"number": number}
+				if i < len(run.lookupHeadOwners) {
+					node["headRepositoryOwner"] = obj{"login": run.lookupHeadOwners[i]}
+				}
+				nodes = append(nodes, node)
+			}
+			return assignJSON(result, obj{
+				"repository": obj{"pullRequests": obj{"nodes": nodes}},
+			})
+		}
+		run.reportVariables = variables
+		return json.Unmarshal(viewResponse, result)
+	}
+	apiClientFactory = func(host string) ghapi.API {
+		run.hosts = append(run.hosts, host)
+		return fake
+	}
 
 	root := newRootCommand()
 	root.SetOut(io.Discard)
 	root.SetErr(io.Discard)
 	root.SetArgs(append([]string{"review", "view"}, args...))
-
-	err := root.Execute()
-	return fake.variables, err
+	run.err = root.Execute()
 }
 
 func TestInferenceFillsRepoAndPullRequest(t *testing.T) {
-	stubGitContext(t, inferredRepo("octo/demo"), inferredPR(7))
+	stubGitContext(t, inferredRepo("octo", "demo", "github.com"), inferredBranch("feature"))
 
-	variables, err := runViewForInference(t)
-	require.NoError(t, err)
-	assert.Equal(t, "octo", variables["owner"])
-	assert.Equal(t, "demo", variables["name"])
-	assert.Equal(t, 7, variables["number"])
+	run := &inferenceRun{lookupNumbers: []int{7}}
+	runViewForInference(t, run)
+
+	require.NoError(t, run.err)
+	assert.Equal(t, "octo", run.lookupVariables["owner"])
+	assert.Equal(t, "demo", run.lookupVariables["name"])
+	assert.Equal(t, "feature", run.lookupVariables["headRefName"])
+	assert.Equal(t, "octo", run.reportVariables["owner"])
+	assert.Equal(t, "demo", run.reportVariables["name"])
+	assert.Equal(t, 7, run.reportVariables["number"])
+}
+
+// The remote decides the host when GH_HOST does not, so an enterprise checkout
+// resolves without extra configuration.
+func TestInferredRemoteHostIsUsed(t *testing.T) {
+	t.Setenv("GH_HOST", "")
+	stubGitContext(t, inferredRepo("octo", "demo", "github.example.com"), inferredBranch("feature"))
+
+	run := &inferenceRun{lookupNumbers: []int{7}}
+	runViewForInference(t, run)
+
+	require.NoError(t, run.err)
+	require.NotEmpty(t, run.hosts)
+	for _, host := range run.hosts {
+		assert.Equal(t, "github.example.com", host)
+	}
 }
 
 func TestExplicitFlagsSkipInference(t *testing.T) {
-	stubGitContext(t, repoInferenceBanned(t), prInferenceBanned(t))
+	stubGitContext(t, repoInferenceBanned(t), branchInferenceBanned(t))
 
-	variables, err := runViewForInference(t, "--repo", "other/repo", "--pr", "3")
-	require.NoError(t, err)
-	assert.Equal(t, "other", variables["owner"])
-	assert.Equal(t, "repo", variables["name"])
-	assert.Equal(t, 3, variables["number"])
+	run := &inferenceRun{}
+	runViewForInference(t, run, "--repo", "other/repo", "--pr", "3")
+
+	require.NoError(t, run.err)
+	assert.Nil(t, run.lookupVariables, "branch lookup should not have run")
+	assert.Equal(t, "other", run.reportVariables["owner"])
+	assert.Equal(t, 3, run.reportVariables["number"])
 }
 
 // An explicit --repo may name a repository the working directory knows nothing
-// about, so the checked out branch must not be used to pick a pull request.
+// about, so the checked out branch must not pick a pull request there.
 func TestExplicitRepoDoesNotInferPullRequest(t *testing.T) {
-	stubGitContext(t, repoInferenceBanned(t), prInferenceBanned(t))
+	stubGitContext(t, repoInferenceBanned(t), branchInferenceBanned(t))
 
-	_, err := runViewForInference(t, "--repo", "other/repo")
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "must specify a pull request")
+	run := &inferenceRun{}
+	runViewForInference(t, run, "--repo", "other/repo")
+
+	require.Error(t, run.err)
+	assert.Contains(t, run.err.Error(), "must specify a pull request")
 }
 
 func TestPullURLSelectorSkipsInference(t *testing.T) {
-	stubGitContext(t, repoInferenceBanned(t), prInferenceBanned(t))
+	stubGitContext(t, repoInferenceBanned(t), branchInferenceBanned(t))
 
-	variables, err := runViewForInference(t, "https://github.com/octo/demo/pull/9")
-	require.NoError(t, err)
-	assert.Equal(t, "octo", variables["owner"])
-	assert.Equal(t, "demo", variables["name"])
-	assert.Equal(t, 9, variables["number"])
+	run := &inferenceRun{}
+	runViewForInference(t, run, "https://github.com/octo/demo/pull/9")
+
+	require.NoError(t, run.err)
+	assert.Nil(t, run.lookupVariables, "branch lookup should not have run")
+	assert.Equal(t, "octo", run.reportVariables["owner"])
+	assert.Equal(t, 9, run.reportVariables["number"])
 }
 
 func TestRepoInferenceFailureIsReported(t *testing.T) {
-	stubGitContext(t, func() (string, error) {
-		return "", errors.New("not a git repository")
-	}, prInferenceBanned(t))
+	stubGitContext(t, func() (gitctx.Repo, error) {
+		return gitctx.Repo{}, errors.New("no git remotes configured")
+	}, branchInferenceBanned(t))
 
-	_, err := runViewForInference(t)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "no --repo given and none could be inferred")
-	assert.Contains(t, err.Error(), "not a git repository")
+	run := &inferenceRun{}
+	runViewForInference(t, run)
+
+	require.Error(t, run.err)
+	assert.Contains(t, run.err.Error(), "no --repo given and none could be inferred from the git remotes")
+	assert.Contains(t, run.err.Error(), "no git remotes configured")
 }
 
-func TestPullRequestInferenceFailureIsReported(t *testing.T) {
-	stubGitContext(t, inferredRepo("octo/demo"), func() (int, error) {
-		return 0, errors.New("no pull requests found for branch fork")
+func TestDetachedHeadIsReported(t *testing.T) {
+	stubGitContext(t, inferredRepo("octo", "demo", "github.com"), func() (string, error) {
+		return "", gitctx.ErrNoBranch
 	})
 
-	_, err := runViewForInference(t)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "none could be inferred from the current branch")
-	assert.Contains(t, err.Error(), "no pull requests found for branch fork")
+	run := &inferenceRun{}
+	runViewForInference(t, run)
+
+	require.Error(t, run.err)
+	assert.Contains(t, run.err.Error(), "the current branch could not be determined")
+	assert.Contains(t, run.err.Error(), "HEAD is not on a branch")
+}
+
+func TestBranchWithoutPullRequestIsReported(t *testing.T) {
+	stubGitContext(t, inferredRepo("octo", "demo", "github.com"), inferredBranch("feature"))
+
+	run := &inferenceRun{}
+	runViewForInference(t, run)
+
+	require.Error(t, run.err)
+	assert.Contains(t, run.err.Error(), `no open pull request found for branch "feature" in octo/demo`)
+}
+
+func TestAmbiguousBranchIsReported(t *testing.T) {
+	stubGitContext(t, inferredRepo("octo", "demo", "github.com"), inferredBranch("patch-1"))
+
+	run := &inferenceRun{lookupNumbers: []int{11, 12}, lookupHeadOwners: []string{"alice", "bob"}}
+	runViewForInference(t, run)
+
+	require.Error(t, run.err)
+	assert.Contains(t, run.err.Error(), `branch "patch-1" heads 2 open pull requests`)
+	assert.Contains(t, run.err.Error(), "#11 from alice")
+	assert.Contains(t, run.err.Error(), "#12 from bob")
 }
 
 // Inference lives in the shared options, so every command group gets it.
@@ -130,7 +217,7 @@ func TestThreadsListInfersPullRequest(t *testing.T) {
 	originalFactory := apiClientFactory
 	defer func() { apiClientFactory = originalFactory }()
 
-	stubGitContext(t, inferredRepo("octo/demo"), inferredPR(7))
+	stubGitContext(t, inferredRepo("octo", "demo", "github.com"), inferredBranch("feature"))
 
 	var restPaths []string
 	fake := &commandFakeAPI{}
@@ -146,11 +233,16 @@ func TestThreadsListInfersPullRequest(t *testing.T) {
 		}
 	}
 	fake.graphqlFunc = func(query string, variables map[string]interface{}, result interface{}) error {
+		if strings.Contains(query, "PullRequestsForBranch") {
+			return assignJSON(result, obj{
+				"repository": obj{"pullRequests": obj{"nodes": []obj{{"number": 7}}}},
+			})
+		}
 		return assignJSON(result, obj{
 			"node": obj{"reviewThreads": obj{"nodes": []obj{}}},
 		})
 	}
-	apiClientFactory = func(host string) ghcli.API { return fake }
+	apiClientFactory = func(host string) ghapi.API { return fake }
 
 	root := newRootCommand()
 	root.SetOut(&bytes.Buffer{})

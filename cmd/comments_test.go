@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/agynio/gh-pr-review/internal/ghcli"
+	"github.com/agynio/gh-pr-review/internal/ghapi"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -109,7 +109,7 @@ func TestCommentsReplyCommand(t *testing.T) {
 			return nil
 		}
 	}
-	apiClientFactory = func(host string) ghcli.API { return fake }
+	apiClientFactory = func(host string) ghapi.API { return fake }
 
 	root := newRootCommand()
 	stdout := &bytes.Buffer{}
@@ -185,7 +185,7 @@ func TestCommentsReplyCommandWithoutReviewID(t *testing.T) {
 			return nil
 		}
 	}
-	apiClientFactory = func(host string) ghcli.API { return fake }
+	apiClientFactory = func(host string) ghapi.API { return fake }
 
 	root := newRootCommand()
 	stdout := &bytes.Buffer{}

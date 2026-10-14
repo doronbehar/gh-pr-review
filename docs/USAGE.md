@@ -4,13 +4,19 @@ All commands accept pull request selectors as either:
 
 - a pull request URL (`https://github.com/owner/repo/pull/123`)
 - a pull request number when combined with `-R owner/repo`
-- nothing at all, inside a git repository: `-R` is inferred from the git
-  remotes via `gh repo view` (honoring `gh repo set-default`), and the pull
-  request number from the checked out branch via `gh pr view`
+- nothing at all, inside a git repository: `-R` is read from the git remotes
+  (honoring `GH_REPO`, `gh repo set-default`, ssh aliases, and `upstream`
+  before `origin`), and the pull request number from the one open pull request
+  whose head ref is the checked out branch
 
 Branch inference only applies when `-R` is inferred as well, and a pull request
-URL skips inference entirely. Explicit values always win, and a failed
-inference reports the `gh` command that could not answer.
+URL skips inference entirely. Explicit values always win. The remote supplies
+the host when `GH_HOST` does not, and a failed or ambiguous inference says what
+it found.
+
+Requests are made over HTTP from this process rather than by invoking `gh`.
+Credentials come from `GH_TOKEN`/`GITHUB_TOKEN`, then gh's `hosts.yml`, then
+gh's secure storage.
 
 Unless stated otherwise, commands emit JSON only. Optional fields are omitted
 instead of serializing as `null`. Array responses default to `[]`.

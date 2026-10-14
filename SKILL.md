@@ -5,7 +5,7 @@ description: View and manage inline GitHub PR review comments with full thread c
 
 # gh-pr-review
 
-A GitHub CLI extension that provides complete inline PR review comment access from the terminal with LLM-friendly JSON output.
+A GitHub CLI extension that provides complete inline PR review comment access from the terminal with LLM-friendly JSON output. It talks to the GitHub API directly, reusing gh's credentials (`GH_TOKEN`, `hosts.yml`, or gh's secure storage).
 
 ## When to Use
 
@@ -35,14 +35,17 @@ gh extension install agynio/gh-pr-review
 ## Repository and PR Inference
 
 When run inside a git repository, `-R owner/repo` and the pull request number
-are **inferred automatically** — `-R` from the git remotes (honoring
-`gh repo set-default`) and the number from the checked out branch. Pass them
+are **inferred automatically** — `-R` from the git remotes (honoring `GH_REPO`,
+`gh repo set-default`, and `upstream` before `origin`) and the number from the
+open pull request whose head ref is the checked out branch. Pass them
 explicitly to target a different repository or pull request; explicit values
 always win.
 
 Branch inference only applies when `-R` is also inferred, since an explicit
 `-R` may name a repository unrelated to the working directory. A pull request
-URL needs no inference at all.
+URL needs no inference at all. A branch heading several open pull requests (as
+happens when forks share a branch name) is reported as ambiguous instead of
+guessed at — pass `--pr` in that case.
 
 ## Core Commands
 

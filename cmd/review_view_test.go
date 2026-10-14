@@ -9,7 +9,7 @@ import (
 
 	_ "embed"
 
-	"github.com/agynio/gh-pr-review/internal/ghcli"
+	"github.com/agynio/gh-pr-review/internal/ghapi"
 )
 
 //go:embed testdata/report_response.json
@@ -20,7 +20,7 @@ func TestReviewViewCommandFiltersOutput(t *testing.T) {
 	defer func() { apiClientFactory = originalFactory }()
 
 	fake := &fakeViewAPI{payload: viewResponse, t: t}
-	apiClientFactory = func(host string) ghcli.API {
+	apiClientFactory = func(host string) ghapi.API {
 		if host == "" {
 			t.Fatalf("expected host to be resolved, got empty")
 		}
@@ -110,7 +110,7 @@ func TestReviewViewCommandIncludesCommentNodeID(t *testing.T) {
 	defer func() { apiClientFactory = originalFactory }()
 
 	fake := &fakeViewAPI{payload: viewResponse, t: t}
-	apiClientFactory = func(host string) ghcli.API { return fake }
+	apiClientFactory = func(host string) ghapi.API { return fake }
 
 	root := newRootCommand()
 	buf := &bytes.Buffer{}
@@ -173,7 +173,7 @@ func TestCommentsViewCommandMatchesReviewView(t *testing.T) {
 
 	run := func(args ...string) string {
 		fake := &fakeViewAPI{payload: viewResponse, t: t}
-		apiClientFactory = func(host string) ghcli.API { return fake }
+		apiClientFactory = func(host string) ghapi.API { return fake }
 
 		root := newRootCommand()
 		buf := &bytes.Buffer{}
