@@ -25,7 +25,7 @@ Useful filters:
 Example capturing the latest actionable work:
 
 ```bash
-gh pr-review review report 51 -R agyn/repo \
+gh pr-review review view 51 -R agyn/repo \
   --reviewer emerson \
   --states CHANGES_REQUESTED,COMMENTED \
   --unresolved \
@@ -58,7 +58,7 @@ Note: If you want to leave a high-level comment on a PR that isn’t tied to any
    }
    ```
 
-2. **Add inline comments with the pending review ID.** The `review comment`requiers `review-id` identifier `PRR_…`. Use `gh pr-review review comment <PR number> -R <owner>/<repo> ...`. Example:
+2. **Add inline comments with the pending review ID.** The `review comment` command requires a `review-id` identifier `PRR_…`. Use `gh pr-review review comment <PR number> -R <owner>/<repo> ...`. Example:
 
    ```sh
    gh pr-review review comment 42 -R owner/repo \
@@ -95,7 +95,7 @@ Optimization Tips:
 
 ## Resolving review comments
 
-To see a list of your unresolved threads, use `gh pr-review review report` with filters `--unresolved` and `--reviewer <your login>`
+To see a list of your unresolved threads, use `gh pr-review review view` with filters `--unresolved` and `--reviewer <your login>`
 
 
 Mark an inline thread as resolved:
